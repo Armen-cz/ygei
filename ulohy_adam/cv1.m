@@ -1,17 +1,15 @@
-clc 
-clear
-format long g
+clc; clear; format long g
 
 %Load
 
 fig1= imread("C:\Users\adamk\Documents\.CVUT\7_semestr\geoinformatika\ygei\cviceni\cv1\Image1.bmp");
-fig1= imread('C:\Users\adamk\Documents\.CVUT\7_semestr\geoinformatika\ygei\cviceni\cv1\Image2.bmp');
+fig2= imread('C:\Users\adamk\Documents\.CVUT\7_semestr\geoinformatika\ygei\cviceni\cv1\Image2.bmp');
 %imshow(fig1)
 
 
-R = double(fig1(:,:,1)); %Double, aby se s tím dalo počítat
-G = double(fig1(:,:,2));
-B = double(fig1(:,:,3));
+R = double(fig2(:,:,1)); %Double, aby se s tím dalo počítat
+G = double(fig2(:,:,2));
+B = double(fig2(:,:,3));
 
 Y = 0.2990*R + 0.5870*G + 0.1140*B;
 Cb = -0.1687*R - 0.3313*G + 0.5000*B + 128;
@@ -46,8 +44,22 @@ Y_old = Y;
 Cb_old = Cb;
 Cr_old = Cr;
 
+[m_old, n_old] = size(Y_old);
+
+% interval transfer
+Y = 2*Y - 255;
+Cb = 2*Cb - 255;
+Cr = 2*Cr - 255;
+
+% raster resampling
+resample_size = 2; % used for resample and inverse resample
+
+Y_res = resample(Y, resample_size);
+Cb_res = resample(Cb, resample_size);
+Cr_res = resample(Cr, resample_size);
+
 % Division to submatrices
-[m, n] = size(Y);
+[m, n] = size(Y_res);
 
 % compression factor - 1. krok vytvářející kompresi
 q = 50;
@@ -59,9 +71,9 @@ for i = 1:8:(m-7)
     % Process columns
     for j = 1:8:(n-7)
         % Get submatrices
-        Ys = Y(i:i+7, j:j+7);
-        Cbs = Cb(i:i+7, j:j+7); 
-        Crs = Cr(i:i+7, j:j+7);   
+        Ys = Y_res(i:i+7, j:j+7);
+        Cbs = Cb_res(i:i+7, j:j+7); 
+        Crs = Cr_res(i:i+7, j:j+7);   
 
         % DCT vstup: raster(img-1b), výstup: raster(imgT-1b)
         % apply dct
@@ -70,14 +82,14 @@ for i = 1:8:(m-7)
         Crs_dct = dct(Crs);
 
         % quantization
-        Ys_q = round(Ys_dct ./ Qcf);
-        Cb_q = round(Cbs_dct ./ Qyf);
-        Cr_q = round(Crs_dct ./ Qyf);
+        Ys_q = round(Ys_dct ./ Qyf);
+        Cb_q = round(Cbs_dct ./ Qcf);
+        Cr_q = round(Crs_dct ./ Qcf);
 
         % update transformed matrix
-        Y(i:i+7, j:j+7) = Ys_q;
-        Cb(i:i+7, j:j+7) = Cb_q;
-        Cr(i:i+7, j:j+7) = Cr_q;
+        Y_res(i:i+7, j:j+7) = Ys_q;
+        Cb_res(i:i+7, j:j+7) = Cb_q;
+        Cr_res(i:i+7, j:j+7) = Cr_q;
 
 
     end
@@ -92,28 +104,39 @@ for i = 1:8:(m-7)
     % Process columns
     for j = 1:8:(n-7)
         % Get submatrices
-        Ys = Y(i:i+7, j:j+7);
-        Cbs = Cb(i:i+7, j:j+7); 
-        Crs = Cr(i:i+7, j:j+7);  
+        Ys = Y_res(i:i+7, j:j+7);
+        Cbs = Cb_res(i:i+7, j:j+7); 
+        Crs = Cr_res(i:i+7, j:j+7);  
 
         % dequantization
-        Ys_dq = Ys .* Qcf;
-        Cbs_dq = Cbs .* Qyf;
-        Crs_dq = Crs .* Qyf;
+        Ys_dq = Ys .* Qyf;
+        Cbs_dq = Cbs .* Qcf;
+        Crs_dq = Crs .* Qcf;
 
         % IDCT vstup: raster(imgT-1b), výstup: raster(img-1b)
         % apply idct
-        Ys_idct = myidct(Ys_dq);
-        Cbs_idct = myidct(Cbs_dq);
-        Crs_idct = myidct(Crs_dq);
+        Ys_idct = idct(Ys_dq);
+        Cbs_idct = idct(Cbs_dq);
+        Crs_idct = idct(Crs_dq);
 
         % update transformed matrix
-        Y(i:i+7, j:j+7) = Ys_idct;
-        Cb(i:i+7, j:j+7) = Cbs_idct;
-        Cr(i:i+7, j:j+7) = Crs_idct;
+        Y_res(i:i+7, j:j+7) = Ys_idct;
+        Cb_res(i:i+7, j:j+7) = Cbs_idct;
+        Cr_res(i:i+7, j:j+7) = Crs_idct;
 
     end
 end
+
+% Resampling back to the original size 
+% (to have same size for standard deviation calculations)
+Y = iresample(Y_res, resample_size, m_old, n_old);
+Cb = iresample(Cb_res, resample_size, m_old, n_old);
+Cr = iresample(Cr_res, resample_size, m_old, n_old);
+
+% Transform interval
+Y = 1/2 * (Y + 255);
+Cb = 1/2 * (Cb + 255);
+Cr = 1/2 * (Cr + 255);
 
 % YCbCr to RGB
 R_new = Y + 1.4020*(Cr-128);
@@ -130,7 +153,7 @@ new_raster(:,:,1) = Ri;
 new_raster(:,:,2) = Gi;
 new_raster(:,:,3) = Bi;
 
-imshow(new_raster);
+imshow(new_raster)
 
 % compute standard deviations for rgb components
 dR = R - R_new;
@@ -142,6 +165,7 @@ sigmaG = sqrt(sum(sum(dG.^2))/(m*n));
 sigmaB = sqrt(sum(sum(dB.^2))/(m*n));
 
 function [img_t] = dct(img)
+% discrete cosine transform
 
 img_t = img;
 
@@ -188,6 +212,8 @@ end
 
 
 function [img] = idct(img_t)
+% inverse discrete cosine transform
+
 img = img_t;
 % Process lines
 
@@ -232,42 +258,62 @@ end
 % end of function
 end
 
-function Rt=myidct(R)
-Rt = R;
 
-%Output raster: rows
-for x = 0:7
-   
-    %Output raster: columns
-    for y = 0:7
-       
-        %Input raster: rows
-        F = 0;
-        for u = 0:7
-            %Cu
-            if u == 0
-                Cu = sqrt(2)/2;
-            else
-                 Cu = 1;
-            end
+function [new_img] = resample(image, step)
+% resampling function
+% input: raster, step size (level of resampling)
+% output: resampled raster
 
-            %Input raster: columns
-            for v = 0:7
-                %Cv
-                if v == 0
-                    Cv = sqrt(2)/2;
-                else
-                    Cv = 1;
-                end
+    [m, n] = size(image);
+    new_m = ceil(m / step); % rounded for indexing
+    new_n = ceil(n / step); % rounded for indexing
+    new_img = zeros(new_m, new_n);
 
-                F=F+1/4*Cu*Cv*(R(u+1, v+1)*cos((2*x+1)*u*pi/16)*cos((2*y+1)*v*pi/16));
+    i = 1;
+    for x = 1:step:m
+        j = 1;
+        for y = 1:step:n
+            x_end = min(x + step - 1, m); % to not go over max index value
+            y_end = min(y + step - 1, n);
+            
+            % calculating new value of pixel
+            resampled_value = sum(sum(image(x:x_end, y:y_end))) / (step^2);
+            new_img(i, j) = resampled_value;
 
-            end
+            j = j + 1;
         end
-
-        %Output raster
-        Rt(x+1,y+1) = F;
+        i = i + 1;
     end
 end
 
+function [new_img] = iresample(image, step, max_size_x, max_size_y)
+% inverse resampling function (increases size of a raster)
+% input: raster, step size (level of resampling),
+%        max size to ensure the maximum size of a created raster
+% output: resampled raster
+
+    if nargin < 3
+        max_size_x = Inf;
+    end
+    if nargin < 4
+        max_size_y = Inf;
+    end
+
+    [m, n] = size(image);
+    new_m = min(m * step, max_size_x);
+    new_n = min(n * step, max_size_y);
+    new_img = zeros(new_m, new_n);
+
+    i = 1;
+    for x = 1:m
+        j = 1;
+        for y = 1:n
+            % assinging new values from existing raster
+
+            new_img(i:min(i+(step-1), max_size_x), j:min(j+(step-1), max_size_y)) = image(x, y);
+
+            j = j + step;
+        end
+        i = i + step;
+    end
 end
