@@ -2,8 +2,8 @@ clc; clear; format long g
 
 %Load
 
-fig1= imread("C:\Users\adamk\Documents\.CVUT\7_semestr\geoinformatika\ygei\cviceni\cv1\Image1.bmp");
-fig2= imread('C:\Users\adamk\Documents\.CVUT\7_semestr\geoinformatika\ygei\cviceni\cv1\Image2.bmp');
+fig1= imread('Image1.bmp');
+fig2= imread('Image2.bmp');
 %imshow(fig1)
 
 
@@ -165,7 +165,7 @@ sigmaG = sqrt(sum(sum(dG.^2))/(m*n));
 sigmaB = sqrt(sum(sum(dB.^2))/(m*n));
 
 function [img_t] = dct(img)
-% discrete cosine transform
+% discrete cosine transformation
 
 img_t = img;
 
