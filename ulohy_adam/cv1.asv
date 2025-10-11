@@ -4,13 +4,12 @@ clc; clear; format long g
 
 fig1= imread('Image1.bmp');
 fig2= imread('Image2.bmp');
-figShrek= imread('shrek.png');
 %imshow(fig1)
 
 
-R = double(figShrek(:,:,1)); %Double, aby se s tím dalo počítat
-G = double(figShrek(:,:,2));
-B = double(figShrek(:,:,3));
+R = double(fig2(:,:,1)); %Double, aby se s tím dalo počítat
+G = double(fig2(:,:,2));
+B = double(fig2(:,:,3));
 
 Y = 0.2990*R + 0.5870*G + 0.1140*B;
 Cb = -0.1687*R - 0.3313*G + 0.5000*B + 128;
@@ -104,7 +103,7 @@ for i = 1:8:(m-7)
     end
 end
 
-if m == n % only works with square pictures
+if m == n
 
     %%%% Tady bude cik-cak (zig-zag) sekvence
     % Nejlépe nějaká fce
@@ -113,7 +112,7 @@ if m == n % only works with square pictures
     [Y_huffman, Y_codes] = my_huffman(Y);
     [Cb_huffman, Cb_codes] = my_huffman(Cb);
     [Cr_huffman, Cr_codes] = my_huffman(Cr);
-
+    
 end
 
 
@@ -121,19 +120,16 @@ end
 % JPEG DECOMPRESSION
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% Huffman decoding
-if m == n
+% Huffman decoding - předělat asi trochu funkci, protože kvůli find() je
+% pomalý
 Y = my_ihuffman(Y_huffman, Y_codes);
 Cb = my_ihuffman(Cb_huffman, Cb_codes);
 Cr = my_ihuffman(Cr_huffman,Cr_codes);
 
 
 
-% cik-cak inverse sekvence - udělat stále v tom if statement
+% cik-cak inverse sekvence
 
-
-
-end
 
 % Process rows
 for i = 1:8:(m-7)
