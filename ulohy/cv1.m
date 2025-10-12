@@ -4,12 +4,13 @@ clc; clear; format long g
 
 fig1= imread('Image1.bmp');
 fig2= imread('Image2.bmp');
+figShrek= imread('shrek.png');
 %imshow(fig1)
 
 
-R = double(fig2(:,:,1)); %Double, aby se s tím dalo počítat
-G = double(fig2(:,:,2));
-B = double(fig2(:,:,3));
+R = double(figShrek(:,:,1)); %Double, aby se s tím dalo počítat
+G = double(figShrek(:,:,2));
+B = double(figShrek(:,:,3));
 
 Y = 0.2990*R + 0.5870*G + 0.1140*B;
 Cb = -0.1687*R - 0.3313*G + 0.5000*B + 128;
@@ -82,16 +83,21 @@ for i = 1:8:(m-7)
         Cbs = Cb(i:i+7, j:j+7); 
         Crs = Cr(i:i+7, j:j+7);   
 
-        % DCT vstup: raster(img-1b), výstup: raster(imgT-1b)
-        % apply dct
-        Ys_dct = dct(Ys);
-        Cbs_dct = dct(Cbs);
-        Crs_dct = dct(Crs);
+        % % DCT vstup: raster(img-1b), výstup: raster(imgT-1b)
+        % % apply dct
+        % Ys_t = dct(Ys);
+        % Cbs_t = dct(Cbs);
+        % Crs_t = dct(Crs);
+
+        %DFT vstup: raster(img-1b, výstup: raster(imgT-1b)
+        Ys_t = real(dft(Ys));
+        Cbs_t = real(dft(Cbs));
+        Crs_t = real(dft(Crs));
 
         % quantization
-        Ys_q = round(Ys_dct ./ Qyf);
-        Cb_q = round(Cbs_dct ./ Qcf);
-        Cr_q = round(Crs_dct ./ Qcf);
+        Ys_q = round(Ys_t ./ Qyf);
+        Cb_q = round(Cbs_t ./ Qcf);
+        Cr_q = round(Crs_t ./ Qcf);
 
         
         % update transformed matrix
@@ -103,7 +109,7 @@ for i = 1:8:(m-7)
     end
 end
 
-if m == n
+if m == n % only works with square pictures
 
     %%%% Tady bude cik-cak (zig-zag) sekvence
     % Nejlépe nějaká fce
@@ -112,7 +118,7 @@ if m == n
     [Y_huffman, Y_codes] = my_huffman(Y);
     [Cb_huffman, Cb_codes] = my_huffman(Cb);
     [Cr_huffman, Cr_codes] = my_huffman(Cr);
-    
+
 end
 
 
@@ -120,16 +126,15 @@ end
 % JPEG DECOMPRESSION
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% Huffman decoding - předělat asi trochu funkci, protože kvůli find() je
-% pomalý
+% Huffman decoding
+if m == n
 Y = my_ihuffman(Y_huffman, Y_codes);
 Cb = my_ihuffman(Cb_huffman, Cb_codes);
 Cr = my_ihuffman(Cr_huffman,Cr_codes);
 
+% cik-cak inverse sekvence - udělat stále v tom if statement
 
-
-% cik-cak inverse sekvence
-
+end
 
 % Process rows
 for i = 1:8:(m-7)
@@ -140,25 +145,26 @@ for i = 1:8:(m-7)
         Cbs = Cb(i:i+7, j:j+7); 
         Crs = Cr(i:i+7, j:j+7);  
 
-        % Huffman decoding
-
-        % inverse cik-cak
-
         % dequantization
         Ys_dq = Ys .* Qyf;
         Cbs_dq = Cbs .* Qcf;
         Crs_dq = Crs .* Qcf;
 
-        % IDCT vstup: raster(imgT-1b), výstup: raster(img-1b)
-        % apply idct
-        Ys_idct = idct(Ys_dq);
-        Cbs_idct = idct(Cbs_dq);
-        Crs_idct = idct(Crs_dq);
+        % % IDCT vstup: raster(imgT-1b), výstup: raster(img-1b)
+        % % apply idct
+        % Ys_it = idct(Ys_dq);
+        % Cbs_it = idct(Cbs_dq);
+        % Crs_it = idct(Crs_dq);
+
+        % IDFT vstup: raster(imgT-1b), výstup: raster(img-1b)
+        Ys_it = real(idft(Ys_dq));
+        Cbs_it = real(idft(Cbs_dq));
+        Crs_it = real(idft(Crs_dq));
 
         % update transformed matrix
-        Y(i:i+7, j:j+7) = Ys_idct;
-        Cb(i:i+7, j:j+7) = Cbs_idct;
-        Cr(i:i+7, j:j+7) = Crs_idct;
+        Y(i:i+7, j:j+7) = Ys_it;
+        Cb(i:i+7, j:j+7) = Cbs_it;
+        Cr(i:i+7, j:j+7) = Crs_it;
 
     end
 end
@@ -275,6 +281,72 @@ for x = 0:7
                 end
 
                 fxy=fxy+1/4*cu*cv*(img_t(u+1, v+1)*cos((2*x+1)*u*pi/16)*cos((2*y+1)*v*pi/16));
+
+            end
+        end
+
+        % update raster
+        img(x+1, y+1) = fxy;
+
+    end
+
+end
+% end of function
+end
+
+
+function [img_t] = dft(img)
+% discrete cosine transformation
+
+[m, n] = size(img);
+clear j; % to make sure 'j' is a complex unit
+img_t = img;
+
+% Process lines
+for u = 0:7
+% Process columns
+    for v = 0:7
+        % compute sum
+        fuv = 0;
+        % process lines
+        for x = 0:7
+
+            %process columns
+            for y = 0:7
+                fuv = fuv + img(x+1, y+1)*exp(-j*2*pi*((u*x/m) + (v*y/n)));
+            end
+        end
+        % update raster
+        img_t(u+1, v+1) = fuv;
+
+    end
+
+end
+% end of function
+end
+
+
+function [img] = idft(img_t)
+% inverse discrete cosine transform
+
+[m, n] = size(img_t);
+img = img_t;
+% Process lines
+
+% process lines
+for x = 0:7
+
+    %process columns
+    for y = 0:7
+
+        % compute sum
+        fxy = 0;
+
+        for u = 0:7
+
+            for v = 0:7
+
+                fxy = fxy + 1/(m*n) * img_t(u+1, v+1)*exp(j*2*pi*((u*x/m) + (v*y/n)));
 
             end
         end
