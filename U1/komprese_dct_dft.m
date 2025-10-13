@@ -1,17 +1,17 @@
 clc; clear; format long g
 
 %Load
-fig1= imread('Image1.bmp');
-fig2= imread('Image2.bmp');
-figShrek= imread('shrek.png');
+fig1= imread('stromy_barevne.png');
+fig2= imread('fotografie.png');
+fig3 = imread("vektor.png");
 
 %imshow(fig1)
 
 transform_type = "DFT"; % Choose DCT or DFT
 
-R = double(figShrek(:,:,1)); %Double, aby se s tím dalo počítat
-G = double(figShrek(:,:,2));
-B = double(figShrek(:,:,3));
+R = double(fig3(:,:,1)); %Double, aby se s tím dalo počítat
+G = double(fig3(:,:,2));
+B = double(fig3(:,:,3));
 
 % RGB to YCbCr
 Y = 0.2990*R + 0.5870*G + 0.1140*B;
@@ -72,7 +72,7 @@ Cr = iresample(Cr_res, resample_size, m_old, n_old);
 [m, n] = size(Y);
 
 % compression factor - 1. krok vytvářející kompresi
-q = 50;
+q = 70;
 Qyf = 50 * Qy / q;
 Qcf = 50 * Qc / q;
 
@@ -209,15 +209,18 @@ new_raster(:,:,2) = Gi;
 new_raster(:,:,3) = Bi;
 
 imshow(new_raster)
+%imwrite(new_raster,"novy.png")
 
 % compute standard deviations for rgb components
 dR = R - R_new;
 dG = G - G_new;
 dB = B - B_new;
 
-sigmaR = sqrt(sum(sum(dR.^2))/(m*n));
-sigmaG = sqrt(sum(sum(dG.^2))/(m*n));
-sigmaB = sqrt(sum(sum(dB.^2))/(m*n));
+sigmaR = round(sqrt(sum(sum(dR.^2))/(m*n)),3);
+sigmaG = round(sqrt(sum(sum(dG.^2))/(m*n)),3);
+sigmaB = round(sqrt(sum(sum(dB.^2))/(m*n)),3);
+
+%fprintf("$ %1d \\times %1d $ & %2d & %6.3f & %6.3f & %6.3f \\\\ \\hline\n", resample_size, resample_size, q, sigmaR, sigmaG, sigmaB)
 
 function [img_t] = dct(img)
 % discrete cosine transformation
