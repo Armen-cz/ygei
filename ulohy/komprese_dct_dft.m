@@ -12,9 +12,7 @@ R = double(figShrek(:,:,1)); %Double, aby se s tím dalo počítat
 G = double(figShrek(:,:,2));
 B = double(figShrek(:,:,3));
 
-[LL, LH, HL, HH] = dwt2d(R);
-R_mega_new = idwt2d(LL, LH, HL, HH);    
-
+% RGB to YCbCr
 Y = 0.2990*R + 0.5870*G + 0.1140*B;
 Cb = -0.1687*R - 0.3313*G + 0.5000*B + 128;
 Cr = 0.5000*R - 0.4187*G - 0.0813*B + 128;
@@ -115,12 +113,14 @@ end
 if m == n % only works with square pictures
 
     %%%% Tady bude cik-cak (zig-zag) sekvence
-    % Nejlépe nějaká fce
+    Y_zig = zigzag(Y);
+    Cb_zig = zigzag(Cb);
+    Cr_zig = zigzag(Cr);
     
     %Huffman coding, z cik-cak rovnou do huffmana
-    [Y_huffman, Y_codes] = my_huffman(Y);
-    [Cb_huffman, Cb_codes] = my_huffman(Cb);
-    [Cr_huffman, Cr_codes] = my_huffman(Cr);
+    [Y_huffman, Y_codes] = my_huffman(Y_zig);
+    [Cb_huffman, Cb_codes] = my_huffman(Cb_zig);
+    [Cr_huffman, Cr_codes] = my_huffman(Cr_zig);
 
 end
 
@@ -136,17 +136,21 @@ Cb = my_ihuffman(Cb_huffman, Cb_codes);
 Cr = my_ihuffman(Cr_huffman,Cr_codes);
 
 % cik-cak inverse sekvence - udělat stále v tom if statement
-
+Y_izig = inverse_zigzag(Y);
+Cb_izig = inverse_zigzag(Cb);
+Cr_izig = inverse_zigzag(Cr);
 end
+
+clear Y; clear Cb; clear Cr
 
 % Process rows
 for i = 1:8:(m-7)
     % Process columns
     for j = 1:8:(n-7)
         % Get submatrices
-        Ys = Y(i:i+7, j:j+7);
-        Cbs = Cb(i:i+7, j:j+7); 
-        Crs = Cr(i:i+7, j:j+7);  
+        Ys = Y_izig(i:i+7, j:j+7);
+        Cbs = Cb_izig(i:i+7, j:j+7); 
+        Crs = Cr_izig(i:i+7, j:j+7);  
 
         % dequantization
         Ys_dq = Ys .* Qyf;
@@ -361,171 +365,4 @@ for x = 0:7
 
 end
 % end of function
-end
-
-
-function [new_img] = resample(image, step)
-% resampling function
-% input: raster, step size (level of resampling)
-% output: resampled raster
-
-    [m, n] = size(image);
-    new_m = ceil(m / step); % rounded for indexing
-    new_n = ceil(n / step); % rounded for indexing
-    new_img = zeros(new_m, new_n);
-
-    i = 1;
-    for x = 1:step:m
-        j = 1;
-        for y = 1:step:n
-            x_end = min(x + step - 1, m); % to not go over max index value
-            y_end = min(y + step - 1, n);
-            
-            % calculating new value of pixel
-            resampled_value = sum(sum(image(x:x_end, y:y_end))) / (step^2);
-            new_img(i, j) = resampled_value;
-
-            j = j + 1;
-        end
-        i = i + 1;
-    end
-end
-
-function [new_img] = iresample(image, step, max_size_x, max_size_y)
-% inverse resampling function (increases size of a raster)
-% input: raster, step size (level of resampling),
-%        max size to ensure the maximum size of a created raster
-% output: resampled raster
-
-    if nargin < 3
-        max_size_x = Inf;
-    end
-    if nargin < 4
-        max_size_y = Inf;
-    end
-
-    [m, n] = size(image);
-    new_m = min(m * step, max_size_x);
-    new_n = min(n * step, max_size_y);
-    new_img = zeros(new_m, new_n);
-
-    i = 1;
-    for x = 1:m
-        j = 1;
-        for y = 1:n
-            % assinging new values from existing raster
-
-            new_img(i:min(i+(step-1), max_size_x), j:min(j+(step-1), max_size_y)) = image(x, y);
-
-            j = j + step;
-        end
-        i = i + step;
-    end
-end
-
-function [non_zero_sorted_values] = non_zero_sorted(values, size)
-    non_zero_sorted_values = [];
-    i = 1;
-    for row = 1:length(values)
-        if values(row, 2) ~= 0
-            non_zero_sorted_values(i, :) = [values(row, 1), values(row,2)/size];
-            i = i+1;
-        end
-    end
-    non_zero_sorted_values = sortrows(non_zero_sorted_values, -2, "descend");
-end
-
-
-function [huffman_values, codes] = my_huffman(values)
-    % input: matrix of values (for example 8x8)
-    % output: matrix of cells of the same size as input with huffman coding
-    [m, n] = size(values);
-    
-    % gets the count of all the values
-    all_value_counts = tabulate(reshape(values,1,[]));
-
-    % removes values with 0 occurence and sorts the list
-    huffman_nodes = non_zero_sorted(all_value_counts, length(values)^2);
-    huffman_nodes = num2cell(huffman_nodes); % better for nodes
-    
-    % builds the huffman tree
-    while size(huffman_nodes,1) > 1
-        % sorting to have the two with the lowest propability at the top
-        huffman_nodes = sortrows(huffman_nodes, 2);
-    
-        % takes the smallest nodes
-        left_node = huffman_nodes(1, :);
-        right_node = huffman_nodes(2, :);
-    
-        % creates a new node
-        new_symbol = {left_node{1}, right_node{1}}; % store children
-        new_prob = left_node{2} + right_node{2};
-        new_node = {new_symbol, new_prob};
-    
-        % removes old and creating a new one
-        huffman_nodes(1:2, :) = [];
-        huffman_nodes(end+1, :) = new_node;
-    end
-    
-    % the final Huffman tree
-    huffman_tree = huffman_nodes{1,1};
-    
-    % defining map for better variable storing
-    queue = {huffman_tree, ''};
-    codes = containers.Map('KeyType','double','ValueType','char');
-    
-    % creating huffman codes
-    while length(queue) > 0
-        % Pops the first element
-        node = queue{1,1};
-        prefix = queue{1,2};
-        queue(1,:) = [];  % dequeue
-    
-        if iscell(node)
-            % Left branch appends '0'
-            queue(end+1,:) = {node{1}, strcat(prefix,'0')};
-            % Right branch appends '1'
-            queue(end+1,:) = {node{2}, strcat(prefix,'1')};
-        else
-            if iscell(node)
-                node = node{1};
-            end
-            % Stores code in Map
-            codes(node) = prefix;
-        end
-    end
-    
-    huffman_values = cell(m, n);
-    
-    for i = 1:m
-        for j = 1:n
-            codeStr = codes(values(i,j));
-            huffman_values{i,j} = codeStr - '0'; % convert ascii to numbers
-        end
-    end
-end
-
-function [values] = my_ihuffman(huffman_values, codes)
-    % input: matrix of huffman values (for example 8x8) and code map
-    % output: matrix of cells of the same size as input with original
-    % values
-    [m, n] = size(huffman_values);
-    values = zeros([m, n]);
-
-    % builds inverse mapping: code string to symbol
-    inv_codes = containers.Map('KeyType','char','ValueType','double');
-    code_keys = codes.keys;
-    for k = 1:length(code_keys)
-        sym = code_keys{k};
-        code = codes(sym);
-        inv_codes(code) = sym;
-    end
-
-    for i = 1:m
-        for j = 1:n
-            code_bits = huffman_values{i,j};     
-            code_str = char(code_bits + '0');  % converts numeric to ascii
-            values(i,j) = inv_codes(code_str);
-        end
-    end
 end
