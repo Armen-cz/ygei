@@ -3,7 +3,7 @@ function [new_img] = iresample(image, step, max_size_x, max_size_y)
 % input: raster, step size (level of resampling),
 %        max size to ensure the maximum size of a created raster
 % output: resampled raster
-
+    
     if nargin < 3
         max_size_x = Inf;
     end

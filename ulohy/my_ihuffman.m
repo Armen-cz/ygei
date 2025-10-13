@@ -1,8 +1,10 @@
 
 function [values] = my_ihuffman(huffman_values, codes)
+    % takes huffman values and code map and transforms it into its original
+    %   values
     % input: matrix of huffman values (for example 8x8) and code map
-    % output: matrix of cells of the same size as input with original
-    % values
+    % output: matrix of cells of the same size as input
+
     [m, n] = size(huffman_values);
     values = zeros([m, n]);
 

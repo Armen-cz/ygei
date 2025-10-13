@@ -1,6 +1,9 @@
 function [huffman_values, codes] = my_huffman(values)
     % input: matrix of values (for example 8x8)
     % output: matrix of cells of the same size as input with huffman coding
+    %         codes map
+
+    % reshapes values from zigzag function (array)
     values = reshape(values, [round(sqrt(length(values))), round(sqrt(length(values)))]);
     
     [m, n] = size(values);
@@ -46,15 +49,15 @@ function [huffman_values, codes] = my_huffman(values)
         queue(1,:) = [];  % dequeue
     
         if iscell(node)
-            % Left branch appends '0'
+            % left branch appends '0'
             queue(end+1,:) = {node{1}, strcat(prefix,'0')};
-            % Right branch appends '1'
+            % right branch appends '1'
             queue(end+1,:) = {node{2}, strcat(prefix,'1')};
         else
             if iscell(node)
                 node = node{1};
             end
-            % Stores code in Map
+            % stores code in Map
             codes(node) = prefix;
         end
     end

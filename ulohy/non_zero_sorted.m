@@ -1,4 +1,6 @@
 function [non_zero_sorted_values] = non_zero_sorted(values, size)
+    % sorts values in an array and removes duplicates
+    % used in huffman method
     non_zero_sorted_values = [];
     i = 1;
     for row = 1:length(values)

@@ -1,5 +1,6 @@
 function [new_img] = resample(image, step)
-% resampling function
+% resampling function, that takes only whole number steps
+% step 2 means: 2x2 kernel -> average value into 1 new pixel
 % input: raster, step size (level of resampling)
 % output: resampled raster
 

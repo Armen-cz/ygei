@@ -1,12 +1,13 @@
 clc; clear; format long g
 
 %Load
-
 fig1= imread('Image1.bmp');
 fig2= imread('Image2.bmp');
 figShrek= imread('shrek.png');
+
 %imshow(fig1)
 
+transform_type = "DCT"; % Choose DCT or DFT
 
 R = double(figShrek(:,:,1)); %Double, aby se s tím dalo počítat
 G = double(figShrek(:,:,2));
@@ -82,18 +83,22 @@ for i = 1:8:(m-7)
         % Get submatrices
         Ys = Y(i:i+7, j:j+7);
         Cbs = Cb(i:i+7, j:j+7); 
-        Crs = Cr(i:i+7, j:j+7);   
+        Crs = Cr(i:i+7, j:j+7);  
 
-        % % DCT vstup: raster(img-1b), výstup: raster(imgT-1b)
-        % % apply dct
-        % Ys_t = dct(Ys);
-        % Cbs_t = dct(Cbs);
-        % Crs_t = dct(Crs);
+        switch upper(transformType)
+            case "DCT"
+            % DCT vstup: raster(img-1b), výstup: raster(imgT-1b)
+            % apply dct
+            Ys_t = dct(Ys);
+            Cbs_t = dct(Cbs);
+            Crs_t = dct(Crs);
+    
+            %DFT vstup: raster(img-1b, výstup: raster(imgT-1b)
+            Ys_t = real(dft(Ys));
+            Cbs_t = real(dft(Cbs));
+            Crs_t = real(dft(Crs));
 
-        %DFT vstup: raster(img-1b, výstup: raster(imgT-1b)
-        Ys_t = real(dft(Ys));
-        Cbs_t = real(dft(Cbs));
-        Crs_t = real(dft(Crs));
+        end
 
         % quantization
         Ys_q = round(Ys_t ./ Qyf);
@@ -136,12 +141,13 @@ Cb = my_ihuffman(Cb_huffman, Cb_codes);
 Cr = my_ihuffman(Cr_huffman,Cr_codes);
 
 % cik-cak inverse sekvence - udělat stále v tom if statement
-Y_izig = inverse_zigzag(Y)
-Cb_izig = inverse_zigzag(Cb)
-Cr_izig = inverse_zigzag(Cr)
+Y_izig = inverse_zigzag(Y);
+Cb_izig = inverse_zigzag(Cb);
+Cr_izig = inverse_zigzag(Cr);
 end
 
 clear Y; clear Cb; clear Cr
+
 % Process rows
 for i = 1:8:(m-7)
     % Process columns
@@ -364,64 +370,4 @@ for x = 0:7
 
 end
 % end of function
-end
-
-
-function [new_img] = resample(image, step)
-% resampling function
-% input: raster, step size (level of resampling)
-% output: resampled raster
-
-    [m, n] = size(image);
-    new_m = ceil(m / step); % rounded for indexing
-    new_n = ceil(n / step); % rounded for indexing
-    new_img = zeros(new_m, new_n);
-
-    i = 1;
-    for x = 1:step:m
-        j = 1;
-        for y = 1:step:n
-            x_end = min(x + step - 1, m); % to not go over max index value
-            y_end = min(y + step - 1, n);
-            
-            % calculating new value of pixel
-            resampled_value = sum(sum(image(x:x_end, y:y_end))) / (step^2);
-            new_img(i, j) = resampled_value;
-
-            j = j + 1;
-        end
-        i = i + 1;
-    end
-end
-
-function [new_img] = iresample(image, step, max_size_x, max_size_y)
-% inverse resampling function (increases size of a raster)
-% input: raster, step size (level of resampling),
-%        max size to ensure the maximum size of a created raster
-% output: resampled raster
-
-    if nargin < 3
-        max_size_x = Inf;
-    end
-    if nargin < 4
-        max_size_y = Inf;
-    end
-
-    [m, n] = size(image);
-    new_m = min(m * step, max_size_x);
-    new_n = min(n * step, max_size_y);
-    new_img = zeros(new_m, new_n);
-
-    i = 1;
-    for x = 1:m
-        j = 1;
-        for y = 1:n
-            % assinging new values from existing raster
-
-            new_img(i:min(i+(step-1), max_size_x), j:min(j+(step-1), max_size_y)) = image(x, y);
-
-            j = j + step;
-        end
-        i = i + step;
-    end
 end

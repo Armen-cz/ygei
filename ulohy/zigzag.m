@@ -1,5 +1,7 @@
 function [array] = zigzag(image)
-    
+    % transforms square matrix to an array in zigzag pattern
+    % input: square matrix [m, m]
+    % output: array [m^2, 1]
     [m, n] = size(image);
     i = 1;
     j = 1;

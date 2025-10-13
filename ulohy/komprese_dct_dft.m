@@ -1,12 +1,13 @@
 clc; clear; format long g
 
 %Load
-
 fig1= imread('Image1.bmp');
 fig2= imread('Image2.bmp');
 figShrek= imread('shrek.png');
+
 %imshow(fig1)
 
+transform_type = "DFT"; % Choose DCT or DFT
 
 R = double(figShrek(:,:,1)); %Double, aby se s tím dalo počítat
 G = double(figShrek(:,:,2));
@@ -82,18 +83,24 @@ for i = 1:8:(m-7)
         % Get submatrices
         Ys = Y(i:i+7, j:j+7);
         Cbs = Cb(i:i+7, j:j+7); 
-        Crs = Cr(i:i+7, j:j+7);   
+        Crs = Cr(i:i+7, j:j+7);  
 
-        % % DCT vstup: raster(img-1b), výstup: raster(imgT-1b)
-        % % apply dct
-        % Ys_t = dct(Ys);
-        % Cbs_t = dct(Cbs);
-        % Crs_t = dct(Crs);
+        switch upper(transform_type) % Do only chosen transformation
 
-        %DFT vstup: raster(img-1b, výstup: raster(imgT-1b)
-        Ys_t = real(dft(Ys));
-        Cbs_t = real(dft(Cbs));
-        Crs_t = real(dft(Crs));
+            case "DCT"
+            % DCT vstup: raster(img-1b), výstup: raster(imgT-1b)
+            % apply dct
+            Ys_t = dct(Ys);
+            Cbs_t = dct(Cbs);
+            Crs_t = dct(Crs);
+
+            case "DFT"
+            %DFT vstup: raster(img-1b, výstup: raster(imgT-1b)
+            Ys_t = real(dft(Ys));
+            Cbs_t = real(dft(Cbs));
+            Crs_t = real(dft(Crs));
+
+        end
 
         % quantization
         Ys_q = round(Ys_t ./ Qyf);
@@ -157,16 +164,21 @@ for i = 1:8:(m-7)
         Cbs_dq = Cbs .* Qcf;
         Crs_dq = Crs .* Qcf;
 
-        % % IDCT vstup: raster(imgT-1b), výstup: raster(img-1b)
-        % % apply idct
-        % Ys_it = idct(Ys_dq);
-        % Cbs_it = idct(Cbs_dq);
-        % Crs_it = idct(Crs_dq);
+        switch upper(transform_type) % does only chosen transformation
 
-        % IDFT vstup: raster(imgT-1b), výstup: raster(img-1b)
-        Ys_it = real(idft(Ys_dq));
-        Cbs_it = real(idft(Cbs_dq));
-        Crs_it = real(idft(Crs_dq));
+            case "DCT"
+            % IDCT vstup: raster(imgT-1b), výstup: raster(img-1b)
+            % apply idct
+            Ys_it = idct(Ys_dq);
+            Cbs_it = idct(Cbs_dq);
+            Crs_it = idct(Crs_dq);
+            
+            case "DFT"
+            % IDFT vstup: raster(imgT-1b), výstup: raster(img-1b)
+            Ys_it = real(idft(Ys_dq));
+            Cbs_it = real(idft(Cbs_dq));
+            Crs_it = real(idft(Crs_dq));
+        end
 
         % update transformed matrix
         Y(i:i+7, j:j+7) = Ys_it;
