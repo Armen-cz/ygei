@@ -12,6 +12,9 @@ R = double(figShrek(:,:,1)); %Double, aby se s tím dalo počítat
 G = double(figShrek(:,:,2));
 B = double(figShrek(:,:,3));
 
+[LL, LH, HL, HH] = dwt2d(R);
+R_mega_new = idwt2d(LL, LH, HL, HH);    
+
 Y = 0.2990*R + 0.5870*G + 0.1140*B;
 Cb = -0.1687*R - 0.3313*G + 0.5000*B + 128;
 Cr = 0.5000*R - 0.4187*G - 0.0813*B + 128;
@@ -50,7 +53,7 @@ Cr_old = Cr;
 % interval transfer
 Y = 2*Y - 255;
 Cb = 2*Cb - 255;
-Cr = 2*Cr - 255;
+Cr = 2*Cr - 255;   
 
 % raster resampling
 resample_size = 1; % used for resample and inverse resample
@@ -66,11 +69,16 @@ Y = iresample(Y_res, resample_size, m_old, n_old);
 Cb = iresample(Cb_res, resample_size, m_old, n_old);
 Cr = iresample(Cr_res, resample_size, m_old, n_old);
 
+% Direct wavelet transform
+[Y_LL, Y_LH, Y_HL, Y_HH] = dwt2d(Y);
+[Cb_LL, Cb_LH, Cb_HL, Cb_HH] = dwt2d(Cb);
+[Cr_LL, Cr_LH, Cr_HL, Cr_HH] = dwt2d(Cr);
+
 % Division to submatrices
-[m, n] = size(Y);
+[m, n] = size(Y_LL);
 
 % compression factor - 1. krok vytvářející kompresi
-q = 50;
+q = 10;
 Qyf = 50 * Qy / q;
 Qcf = 50 * Qc / q;
 
@@ -79,31 +87,20 @@ for i = 1:8:(m-7)
     % Process columns
     for j = 1:8:(n-7)
         % Get submatrices
-        Ys = Y(i:i+7, j:j+7);
-        Cbs = Cb(i:i+7, j:j+7); 
-        Crs = Cr(i:i+7, j:j+7);   
-
-        % % DCT vstup: raster(img-1b), výstup: raster(imgT-1b)
-        % % apply dct
-        % Ys_t = dct(Ys);
-        % Cbs_t = dct(Cbs);
-        % Crs_t = dct(Crs);
-
-        %DFT vstup: raster(img-1b, výstup: raster(imgT-1b)
-        Ys_t = real(dft(Ys));
-        Cbs_t = real(dft(Cbs));
-        Crs_t = real(dft(Crs));
+        Ys = Y_LL(i:i+7, j:j+7);
+        Cbs = Cb_LL(i:i+7, j:j+7); 
+        Crs = Cr_LL(i:i+7, j:j+7);   
 
         % quantization
-        Ys_q = round(Ys_t ./ Qyf);
-        Cb_q = round(Cbs_t ./ Qcf);
-        Cr_q = round(Crs_t ./ Qcf);
+        Ys_q = round(Ys ./ Qyf);
+        Cb_q = round(Cbs ./ Qcf);
+        Cr_q = round(Crs ./ Qcf);
 
         
         % update transformed matrix
-        Y(i:i+7, j:j+7) = Ys_q;
-        Cb(i:i+7, j:j+7) = Cb_q;
-        Cr(i:i+7, j:j+7) = Cr_q;
+        Y_LL(i:i+7, j:j+7) = Ys_q;
+        Cb_LL(i:i+7, j:j+7) = Cb_q;
+        Cr_LL(i:i+7, j:j+7) = Cr_q;
 
 
     end
@@ -115,9 +112,9 @@ if m == n % only works with square pictures
     % Nejlépe nějaká fce
     
     %Huffman coding, z cik-cak rovnou do huffmana
-    [Y_huffman, Y_codes] = my_huffman(Y);
-    [Cb_huffman, Cb_codes] = my_huffman(Cb);
-    [Cr_huffman, Cr_codes] = my_huffman(Cr);
+    [Y_huffman, Y_codes] = my_huffman(Y_LL);
+    [Cb_huffman, Cb_codes] = my_huffman(Cb_LL);
+    [Cr_huffman, Cr_codes] = my_huffman(Cr_LL);
 
 end
 
@@ -128,9 +125,9 @@ end
 
 % Huffman decoding
 if m == n
-Y = my_ihuffman(Y_huffman, Y_codes);
-Cb = my_ihuffman(Cb_huffman, Cb_codes);
-Cr = my_ihuffman(Cr_huffman,Cr_codes);
+Y_LL = my_ihuffman(Y_huffman, Y_codes);
+Cb_LL = my_ihuffman(Cb_huffman, Cb_codes);
+Cr_LL = my_ihuffman(Cr_huffman,Cr_codes);
 
 % cik-cak inverse sekvence - udělat stále v tom if statement
 
@@ -141,33 +138,27 @@ for i = 1:8:(m-7)
     % Process columns
     for j = 1:8:(n-7)
         % Get submatrices
-        Ys = Y(i:i+7, j:j+7);
-        Cbs = Cb(i:i+7, j:j+7); 
-        Crs = Cr(i:i+7, j:j+7);  
+        Ys = Y_LL(i:i+7, j:j+7);
+        Cbs = Cb_LL(i:i+7, j:j+7); 
+        Crs = Cr_LL(i:i+7, j:j+7);  
 
         % dequantization
         Ys_dq = Ys .* Qyf;
         Cbs_dq = Cbs .* Qcf;
         Crs_dq = Crs .* Qcf;
 
-        % % IDCT vstup: raster(imgT-1b), výstup: raster(img-1b)
-        % % apply idct
-        % Ys_it = idct(Ys_dq);
-        % Cbs_it = idct(Cbs_dq);
-        % Crs_it = idct(Crs_dq);
-
-        % IDFT vstup: raster(imgT-1b), výstup: raster(img-1b)
-        Ys_it = real(idft(Ys_dq));
-        Cbs_it = real(idft(Cbs_dq));
-        Crs_it = real(idft(Crs_dq));
-
         % update transformed matrix
-        Y(i:i+7, j:j+7) = Ys_it;
-        Cb(i:i+7, j:j+7) = Cbs_it;
-        Cr(i:i+7, j:j+7) = Crs_it;
+        Y_LL(i:i+7, j:j+7) = Ys_dq;
+        Cb_LL(i:i+7, j:j+7) = Cbs_dq;
+        Cr_LL(i:i+7, j:j+7) = Crs_dq;
 
     end
 end
+
+% inverse direct wavelet transform
+Y = idwt2d(Y_LL, Y_LH, Y_HL, Y_HH); 
+Cb = idwt2d(Cb_LL, Cb_LH, Cb_HL, Cb_HH); 
+Cr = idwt2d(Cr_LL, Cr_LH, Cr_HL, Cr_HH); 
 
 % Transform interval
 Y = 1/2 * (Y + 255);
@@ -199,166 +190,6 @@ dB = B - B_new;
 sigmaR = sqrt(sum(sum(dR.^2))/(m*n));
 sigmaG = sqrt(sum(sum(dG.^2))/(m*n));
 sigmaB = sqrt(sum(sum(dB.^2))/(m*n));
-
-function [img_t] = dct(img)
-% discrete cosine transformation
-
-img_t = img;
-
-% Process lines
-for u = 0:7
-
-    % compute cu
-    if (u == 0)
-        cu = sqrt(2)/2;
-    else
-        cu = 1;
-    end
-% Process columns
-    for v = 0:7
-
-        %compute cv
-        if (v == 0)
-            cv = sqrt(2)/2;
-        else
-            cv = 1;
-        end
-        
-        % compute sum
-        fuv = 0;
-        % process lines
-        for x = 0:7
-
-            %process columns
-            for y = 0:7
-
-                fuv = fuv + 1/4 * cu *cv * img(x+1, y+1) * ...
-                    cos((2*x+1)*u*pi/16)*cos((2*y+1)*v*pi/16);
-
-            end
-        end
-        % update raster
-        img_t(u+1, v+1) = fuv;
-
-    end
-
-end
-% end of function
-end
-
-
-function [img] = idct(img_t)
-% inverse discrete cosine transform
-
-img = img_t;
-% Process lines
-
-% process lines
-for x = 0:7
-
-    %process columns
-    for y = 0:7
-
-        % compute sum
-        fxy = 0;
-
-        for u = 0:7
-        
-            % compute cu
-            if (u == 0)
-                cu = sqrt(2)/2;
-            else
-                cu = 1;
-            end
-
-            for v = 0:7
-        
-                %compute cv
-                if (v == 0)
-                    cv = sqrt(2)/2;
-                else
-                    cv = 1;
-                end
-
-                fxy=fxy+1/4*cu*cv*(img_t(u+1, v+1)*cos((2*x+1)*u*pi/16)*cos((2*y+1)*v*pi/16));
-
-            end
-        end
-
-        % update raster
-        img(x+1, y+1) = fxy;
-
-    end
-
-end
-% end of function
-end
-
-
-function [img_t] = dft(img)
-% discrete cosine transformation
-
-[m, n] = size(img);
-clear j; % to make sure 'j' is a complex unit
-img_t = img;
-
-% Process lines
-for u = 0:7
-% Process columns
-    for v = 0:7
-        % compute sum
-        fuv = 0;
-        % process lines
-        for x = 0:7
-
-            %process columns
-            for y = 0:7
-                fuv = fuv + img(x+1, y+1)*exp(-j*2*pi*((u*x/m) + (v*y/n)));
-            end
-        end
-        % update raster
-        img_t(u+1, v+1) = fuv;
-
-    end
-
-end
-% end of function
-end
-
-
-function [img] = idft(img_t)
-% inverse discrete cosine transform
-
-[m, n] = size(img_t);
-img = img_t;
-% Process lines
-
-% process lines
-for x = 0:7
-
-    %process columns
-    for y = 0:7
-
-        % compute sum
-        fxy = 0;
-
-        for u = 0:7
-
-            for v = 0:7
-
-                fxy = fxy + 1/(m*n) * img_t(u+1, v+1)*exp(j*2*pi*((u*x/m) + (v*y/n)));
-
-            end
-        end
-
-        % update raster
-        img(x+1, y+1) = fxy;
-
-    end
-
-end
-% end of function
-end
 
 
 function [new_img] = resample(image, step)
@@ -502,6 +333,7 @@ function [huffman_values, codes] = my_huffman(values)
     end
 end
 
+
 function [values] = my_ihuffman(huffman_values, codes)
     % input: matrix of huffman values (for example 8x8) and code map
     % output: matrix of cells of the same size as input with original
@@ -523,6 +355,78 @@ function [values] = my_ihuffman(huffman_values, codes)
             code_bits = huffman_values{i,j};     
             code_str = char(code_bits + '0');  % converts numeric to ascii
             values(i,j) = inv_codes(code_str);
+        end
+    end
+end
+
+
+function [LL, LH, HL, HH] = dwt2d(img)
+    % processes columns (n columns -> n/2)
+    [m, n] = size(img);
+    L = zeros(m, n/2);
+    H = zeros(m, n/2);
+    
+    % creates low pass and high pass filter
+    for i = 1:m
+        k = 1;
+        for j = 1:2:n
+            L(i, k) = (img(i,j) + img(i,j+1)) / sqrt(2);   % lowpass
+            H(i, k) = (img(i,j) - img(i,j+1)) / sqrt(2);   % highpass
+            k = k + 1;
+        end
+    end
+
+    % processes rows creates LL, LH, HL and HH filters
+    LL = zeros(m/2, n/2);
+    LH = zeros(m/2, n/2);
+    HL = zeros(m/2, n/2);
+    HH = zeros(m/2, n/2);
+    
+    for j = 1:n/2
+        k = 1;
+        for i = 1:2:m
+            % lowpass rows
+            LL(k,j) = (L(i,j) + L(i+1,j)) / sqrt(2);  
+            LH(k,j) = (L(i,j) - L(i+1,j)) / sqrt(2); 
+    
+            % highpass rows
+            HL(k,j) = (H(i,j) + H(i+1,j)) / sqrt(2); 
+            HH(k,j) = (H(i,j) - H(i+1,j)) / sqrt(2); 
+    
+            k = k + 1;
+        end
+    end
+end
+
+function [img] = idwt2d(LL, LH, HL, HH)
+    % Inverse 2D Haar DWT
+    [m_LL, n_LL] = size(LL);
+    m = m_LL * 2;
+    n = n_LL * 2;
+
+    L = zeros(m, n/2);
+    H = zeros(m, n/2);
+    img = zeros(m, n);
+    
+    for j = 1:n/2
+        k = 1;
+        for i = 1:m/2
+            % Recombine columns
+            L(2*i-1,j) = (LL(i,j) + LH(i,j)) / sqrt(2);
+            L(2*i,  j) = (LL(i,j) - LH(i,j)) / sqrt(2);
+    
+            H(2*i-1,j) = (HL(i,j) + HH(i,j)) / sqrt(2);
+            H(2*i,  j) = (HL(i,j) - HH(i,j)) / sqrt(2);
+            k = k + 1;
+        end
+    end
+    
+    for i = 1:m
+        k = 1;
+        for j = 1:n/2
+            img(i,2*j-1) = (L(i,j) + H(i,j)) / sqrt(2);
+            img(i,2*j)   = (L(i,j) - H(i,j)) / sqrt(2);
+            k = k + 1;
         end
     end
 end
