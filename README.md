@@ -1,3 +1,3 @@
 "# ygei" 
 
-trorba úloh pro skupinu: králič, matějková pro předmět geoinformatika 2025 
+trorba úloh pro skupinu: Králič, Matějková pro předmět geoinformatika 2025 
