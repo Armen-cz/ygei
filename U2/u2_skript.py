@@ -1,8 +1,33 @@
 import rasterio
 import numpy
 import matplotlib.pyplot as plt
+import normxcorr2 as norm
 
+def draw_rect(array, row, col, width, height, border_size=5):
+    # draws a rectangle starting from left top corner 
+    
+    # draws the top line
+    for c in range(col, col+width):
+        for r in range(row, row+border_size):
+            array[r][c] = 255
+            
+    # draws the bottom line
+    for c in range(col, col+width):
+        for r in range(row+height-border_size, row+height):
+            array[r][c] = 255
+            
+    # draws left vertical line
+    for c in range(col, col+border_size):
+        for r in range(row+border_size, row+height-border_size):
+            array[r][c] = 255
+            
+    # draws left vertical line
+    for c in range(col+width-border_size, col+width):
+        for r in range(row+border_size, row+height-border_size):
+            array[r][c] = 255
+            
 band_choice = 2 # 0-red, 1-green, 2-blue
+valid_corr_value = 0.6 # sets the value for deciding if the kernel of defines symbol is valid
 
 with rasterio.open('MMC_sk2.jpg', 'r') as ds:
     arr = ds.read()  # stores values like arr[band][row][column]
@@ -41,3 +66,22 @@ symbol_array = symbol_array/len(ref_sym_borders) # divides -> average
 symbol_array_255 = symbol_array*255
 ref_symbol_int8 = symbol_array_255.astype(numpy.uint8)
 plt.imsave(f"ref_symbol_average_{band_choice}.jpg", ref_symbol_int8)
+
+# using normalized corralation function 
+corr_image = norm.normxcorr2(symbol_array, band, "same")
+plt.imsave(f"corr_image.jpg", corr_image)
+
+# creating a new image with only valid points
+valid_corr_values = numpy.zeros([len(band), len(band[0])])
+
+for r, row in enumerate(corr_image):
+    for c, value in enumerate(row):
+        if value > valid_corr_value:
+            draw_rect(valid_corr_values, r, c, sym_width, sym_height)
+            
+plt.imsave(f"valid_corr_points.jpg", valid_corr_values)
+
+
+    
+
+
