@@ -21,3 +21,13 @@
 # vhodné použít HSL (L)
 
 # skupina č.2
+
+
+### část B ###
+
+# tentokrát bude potřeba původní mapu dost předělat, filtrovat, aby byla segmentace vůbec možná, natož kvalitní
+# lesní průseky vyplnit, zbavit vrstevnic a dalších překrývajících linií
+# dva typy lesa, sloučit do jednoho
+
+# v matlabu na segmentaci fce imsegkmeans
+# gabor filter je celkem handy, matlab má opět dobrou dokumentaci
