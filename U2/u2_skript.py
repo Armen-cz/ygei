@@ -150,7 +150,7 @@ plt.imsave(f"ref_symbol_average_{band_choice}_uprava_width_height.jpg", ref_symb
 
 # using normalized corralation function 
 corr_image = norm.normxcorr2(symbol_array, band, "same")
-#plt.imsave(f"corr_image.jpg", corr_image)
+plt.imsave(f"corr_image.jpg", corr_image, cmap="gray")
 
 # creating a new image with only valid rectangles
 valid_corr_rects = numpy.zeros([len(band), len(band[0])])

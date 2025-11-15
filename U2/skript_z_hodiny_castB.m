@@ -3,6 +3,9 @@ format long g
 clc; clear
 fontSize = 20;
 
+% changes if the raster is filled/compact
+fill =  true;
+
 % reads an image using 3 RGB bands
 I = imread("TM25_sk2.jpg");
 
@@ -27,14 +30,14 @@ for y = 1:size(I,1)
            (I(y,x,2) > 155 && I(y,x,2) < 203) && ...
            (I(y,x,3) > 107 && I(y,x,3) < 153)
             only_green(y, x) = 255;
+        
         % dark forest
-
         elseif (I(y,x,1) > 222 && I(y,x,1) < 238) && ...
            (I(y,x,2) > 230 && I(y,x,2) < 250) && ...
            (I(y,x,3) > 160 && I(y,x,3) < 220)
             only_green(y, x) = 255;  
+        
         % light forest
-
         elseif (I(y,x,1) > 240 && I(y,x,1) < 250) && ...
            (I(y,x,2) > 240 && I(y,x,2) < 253) && ...
            (I(y,x,3) > 200 && I(y,x,3) < 220)
@@ -43,11 +46,17 @@ for y = 1:size(I,1)
     end
 end
 
-faded_gauss = imgaussfilt(only_green, 5); % used filter 
+%imshow(only_green, [])
+
+if fill
+    faded_gauss = imgaussfilt(only_green, 5); % used filter for fill
+else
+    faded_gauss = imgaussfilt(only_green, 2); % used filter for no fill
+end
 % imshow(faded_gauss, [])
 
 % figure
-% faded_std = stdfilt(only_green); % did not really work for me
+faded_std = stdfilt(only_green); % did not really work for me
 % imshow(faded_std, [])
 
 average=fspecial('average',[9,9]); % exact 9x9 average filter, 
@@ -65,9 +74,13 @@ rgb_fade = im2single(faded_gauss);
 % imshow(L, [])
 
 % fills thin gaps and smooths smaller holes
-mask = imbinarize(L);
-se = strel('disk', 10);
-closed = imclose(mask, se);
+if fill
+    mask = imbinarize(L);
+    se = strel('disk', 10);
+    closed = imclose(mask, se);
+else
+    closed = imbinarize(L);
+end
 
 % fills all holes
 filled = imfill(closed, 'holes');
@@ -80,22 +93,15 @@ figure
 imshow(clean, [])
 title('filtered image')
 
-% corner coordinates
-border_north = 50 + 40/60;
-border_south = 50 + 35/60;
-border_west = 14 + 30/60;
-border_east = 14 + 37.5/60;
 
-%%% creates a georeferenced tif used later in python for GPKG %%%
-R = georasterref('RasterSize', size(clean), ...
-                 'LatitudeLimits', [border_south, border_north], ... 
-                 'LongitudeLimits', [border_west, border_east]);      
+[row, col] = find(clean);
+coords = [row, col];
 
-R.RowsStartFrom = 'west';
-R.ColumnsStartFrom = 'north';
+% uložení do souboru
+save('lesy.mat', 'coords');
 
-geotiffwrite('lesy.tif', uint8(clean), R, ...
-             'CoordRefSysCode', 4326); % writes geotiff in WGS84
+out_file = "lesy_fill.tif";
 
-imwrite(clean, 'lesy.tif'); % saves the file in tif -> this is used then
-                                                    % used in python script
+imwrite(clean, out_file); % saves the file in tif -> this is then
+                                                   % used in python script
+
