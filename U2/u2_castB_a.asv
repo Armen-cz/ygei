@@ -99,7 +99,6 @@ for i = 1:r
     end
 end
 
-% bluring raster by gaussfilt and segmentation
 forests = imgaussfilt(forests, 3);
 rgb_fadef = im2single(forests);
 [L,C] = imsegkmeans(rgb_fadef, 2, NumAttempts=10);
@@ -116,13 +115,14 @@ pfillef = ~pfillef;
 % removes forests smaller than  px
 cleanf = bwareaopen(pfillef, 50);
 
+
 figure
 imshow(cleanf, [])
 title('filtered image')
 
-%%% SAVE THE OUTPUTS %%%
-
+% save the outputs
 % filled image
+
 [row, col] = find(clean);
 coords = [row, col];
 
@@ -131,6 +131,7 @@ out_file = "lesy_fill.tif";
 imwrite(clean, out_file); % saves the file in tif -> this is then
                                                    % used in python script
 %unfilled image
+
 [row, col] = find(cleanf);
 coords = [row, col];
 
