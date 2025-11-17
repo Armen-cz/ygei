@@ -3,9 +3,6 @@ format long g
 clc; clear
 fontSize = 20;
 
-% changes if the raster is filled
-fill =  true;
-
 % reads an image using 3 RGB bands
 I = imread("TM25_sk2.jpg");
 
@@ -15,7 +12,7 @@ y_bottom = 4954;
 x_right = 4570;
 x_left = 395;
 
-% crops the image to fit the map only
+% crops the image to fit the map
 I = I(y_top:y_bottom, x_left:x_right, :);
 
 % creates a new raster of zeros
@@ -47,70 +44,95 @@ for y = 1:size(I,1)
 end
 
 %imshow(only_green, [])
-
-if fill
-    faded_gauss = imgaussfilt(only_green, 5); % used filter for fill
-else
-    faded_gauss = imgaussfilt(only_green, 2); % used filter for no fill
-end
+% create filled raster
+faded_gauss = imgaussfilt(only_green, 5); % used filter for fill
 % imshow(faded_gauss, [])
-
-% figure
-faded_std = stdfilt(only_green); % did not really work for me
-% imshow(faded_std, [])
-
-% average=fspecial('average',[9,9]); % exact 9x9 average filter, 
-% % similar but slightly worse results than gauss filter
-% faded_average=imfilter(only_green, average);
-
-% imshow(round(faded_average), [])
-
-% transfers double to single
-rgb_fade = im2single(faded_gauss);
+rgb_fade = im2single(faded_gauss); % transfers double to single
 % imshow(rgb_fade, [])
-
-% segmentation to 2 categories
-[L,C] = imsegkmeans(rgb_fade, 2, NumAttempts=10);
+[L,C] = imsegkmeans(rgb_fade, 2, NumAttempts=10); % segmentation to 2 categories
 % imshow(L, [])
-
 % fills thin gaps and smooths smaller holes
-if fill
-    mask = imbinarize(L);
-    se = strel('disk', 10);
-    closed = imclose(mask, se);
-else
-    closed = imbinarize(L);
-end
-
-% fills holes in forests
-if fill
-    % fills all holes
-    filled = imfill(closed, 'holes');
-else 
-    % fills holes up to 50 pixels
-    closed = ~closed;
-    filled = bwareaopen(closed, 50);
-    filled = ~filled;
-end
-% imshow(filled, [])
-
+mask = imbinarize(L);
+se = strel('disk', 10);
+closed = imclose(mask, se);
+% fills all holes
+filled = imfill(closed, 'holes'); % raster with continuous forests
 % removes small particles under 50 pixels
 clean = bwareaopen(filled, 50);
 
+% create uncilled raster
+faded_gauss2 = imgaussfilt(only_green, 2); % used filter for no fill
+% imshow(faded_gauss2, [])
+rgb_fade2 = im2single(faded_gauss2); % transfers double to single
+% imshow(rgb_fade2, [])
+[L2,C] = imsegkmeans(rgb_fade2, 2, NumAttempts=10); % segmentation to 2 categories
+% imshow(L2, [])
+pfilled = imbinarize(L2);
+
+% filter out text
+[r,s] = size(filled);
+desc_in_forests = zeros(r,s);
+for i = 1:r % selects blackish pixels from the input image that overlap with the filled forest raster
+    for j = 1:s
+        if  (I(i,j,1) >= 0) && (I(i,j,1) <= 130) &&...
+            (I(i,j,2) >= 0) && (I(i,j,2) <= 130) &&...
+            (I(i,j,3) >= 0) && (I(i,j,3) <= 130) &&...
+            (filled(i,j) == 1)
+        desc_in_forests(i,j) = 1;
+        end
+    end
+end
+%imshow(desc_in_forests, [])
+
+% create a raster with partially filled forests
+forests = zeros(r,s);
+for i = 1:r
+    for j = 1:s
+        if  (pfilled(i,j) == 1) || (desc_in_forests(i,j) == 1)
+        forests(i,j) = 1;
+        end
+    end
+end
+
+forests = imgaussfilt(forests, 3);
+rgb_fadef = im2single(forests);
+[L,C] = imsegkmeans(rgb_fadef, 2, NumAttempts=10);
+
+% fills thin gaps and smooths smaller holes
+mask = imbinarize(L);
+se = strel('disk', 2);
+closedf = imclose(mask, se);
+
+closedf = ~closedf;
+pfillef = bwareaopen(closedf, 300); % fills holes up to a specified size
+pfillef = ~pfillef;
+
+% removes forests smaller than  px
+cleanf = bwareaopen(pfillef, 50);
+
+
 figure
-imshow(clean, [])
+imshow(cleanf, [])
 title('filtered image')
 
+% save the outputs
+% filled image
 
 [row, col] = find(clean);
 coords = [row, col];
 
-% save the outputs
-
 save('lesy.mat', 'coords');
-
 out_file = "lesy_fill.tif";
-
 imwrite(clean, out_file); % saves the file in tif -> this is then
                                                    % used in python script
+%unfilled image
+
+[row, col] = find(cleanf);
+coords = [row, col];
+
+save('lesy_nofill.mat','coords')
+out_file = "lesy_nofill.tif";
+imwrite(cleanf, out_file); % saves the file in tif -> this is then
+                                                   % used in python script
+
 
