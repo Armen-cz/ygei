@@ -145,33 +145,118 @@ def DFSR(G, u, pred, states):
     states[u] = "closed"
 
 
-# apply BFS
-p_bfs = BFS(G, 1)
-print(p_bfs)
+# # apply BFS
+# p_bfs = BFS(G, 1)
+# print(p_bfs)
 
-pred_path = reconstPath(p_bfs, 1, 9)
-print(pred_path)
+# pred_path = reconstPath(p_bfs, 1, 9)
+# print(pred_path)
 
-# apply DFS with recursion
-p = DFS(G, 1)
-print(p)
+# # apply DFS with recursion
+# p = DFS(G, 1)
+# print(p)
 
-pred_path = reconstPath(p, 1, 9)
-print(pred_path)
+# pred_path = reconstPath(p, 1, 9)
+# print(pred_path)
 
-# apply DFS with stack
-p_dfs = DFSStack(G, 1)
-print(p)
+# # apply DFS with stack
+# p_dfs = DFSStack(G, 1)
+# print(p)
 
-pred_path = reconstPath(p_dfs, 1, 9)
-print(pred_path)
+# pred_path = reconstPath(p_dfs, 1, 9)
+# print(pred_path)
 
-plt.figure(figsize=(15,5))
-plt.subplot(121)
-plot_graph(C, p_bfs)
-plt.subplot(122)
-plot_graph(C, p_dfs)
-plt.suptitle("Left: BFS tree    Right: DFS tree")
-plt.show()
+# plt.figure(figsize=(15,5))
+# plt.subplot(121)
+# plot_graph(C, p_bfs)
+# plt.subplot(122)
+# plot_graph(C, p_dfs)
+# plt.suptitle("Left: BFS tree    Right: DFS tree")
+# plt.show()
 
+
+### 2. cvičení ###
+
+# Priority queue: <prior: value>
+# jarnik - modifikace dijkstra - dv = du
+# alespoň 100 měst
+# Dalnice: 130 km/h
+# 1T-3T: 90 km/h
+# sídla: 50 km/h
+# t = s/v
+# faktor klikatosti f = d(u,v)/||u-v||
+# t' = f*(s/v)
+# porovnat s mapy.cz, applemapy, google maps
+# hranu exportovat jako u, v, w=||u-v|| (v arcgisu to jde nějak exporotovat)
+# souřadnice na 3 desetinná místa
+
+import graph_def3
+import math
+import queue
+
+G = graph_def3.G
+C = graph_def3.C
+
+def dijkstra(G, start, end):
+    # Dijkstra algorithmus
+    
+    n = len(G)
+    pred = [-1]*(n+1) # Predecessors
+    dist = [math.inf]*(n+1) # distances
+    
+    # create priority queue
+    PQ = queue.PriorityQueue()
+    
+    # add start vertex
+    PQ.put((0, start))
+    
+    dist[start] = 0
+    
+    # repeat until queue is empty
+    while not PQ.empty():
+        
+        # get point with lowest du
+        du, u = PQ.get()
+        
+        # browse all adjacent nodes
+        for v, wuv in G[u].items():
+            # relax
+            if dist[v] > dist[u] + wuv:
+                # update dv
+                dist[v] = dist[u] + wuv
+                
+                # store predecessor
+                pred[v] = u
+                
+                # add v to priority queue
+                PQ.put((dist[v], v))
+                
+    return pred
+
+
+# find root
+def find(pred, u):
+    while pred[u] != u:
+        u = pred[u]
+    return u
+
+
+# union
+def union(pred, u, v):
+    root_u = find(pred, u)
+    root_v = find(pred, v)
+    if root_u != root_v:
+        pred[u] = v
+
+
+# call dijkstra
+pred = dijkstra(G, 1, 9)
+
+# path 
+path = reconstPath(pred, 1, 9)
+
+# print results
+print(path)
+    
+# v graph_def2 jsou věci na minimání kostru
 
