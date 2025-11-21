@@ -17,15 +17,15 @@ def plot_graph(C, pred):
     text_dx = 3
     text_dy = 2
     for node, coor in C.items():
-        plt.annotate(str(node), (coor[0] + text_dx, coor[1] + text_dy))
+        plt.annotate(str(node), (-coor[0] - text_dx, -coor[1] - text_dy))
         
-    plt.plot([C[i][0] for i in range(1,len(C)+1)], [C[j][1] for j in range(1, len(C)+1)], "ko")
+    plt.plot([-C[i][0] for i in range(1,len(C))], [-C[j][1] for j in range(1, len(C))], "ko")
     for node, coor in C.items():
 
         # checks if the predecessor exists
         if pred[node] != -1:
-            node1_x, node1_y = coor[0], coor[1]
-            node2_x, node2_y = C[pred[node]][0], C[pred[node]][1]
+            node1_x, node1_y = -coor[0], -coor[1]
+            node2_x, node2_y = -C[pred[node]][0], -C[pred[node]][1]
             dx, dy = node1_x - node2_x, node1_y - node2_y
             
             # draws an arrow between a node and its predecessor

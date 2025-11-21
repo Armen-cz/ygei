@@ -1,6 +1,7 @@
 from collections import *
 from queue import *
 from numpy import *
+from skript_ze_cviceni import *
   
 def loadEdges(file_name):
     #Convert list of lines to the graph
@@ -34,11 +35,11 @@ def edgesToGraph(D, PS, PE, W):
         G[D[PS[i]]][D[PE[i]]] = W[i]
         G[D[PE[i]]][D[PS[i]]] = W[i]
 
-    print(G)
+    #print(G)
     return G
 
 #Load edges
-file = 'graph.txt'
+file = 'cesty_2015_euklid.csv'
 #file = 'graph_disjkstra.txt'
 
 PS, PE, W = loadEdges(file)
@@ -52,4 +53,15 @@ PSE.insert(0, [1000000, 1000000])
 D = pointsToIDs(PSE)
 G = edgesToGraph(D, PS, PE, W)
 
-print(G)
+pred = DFSStack(G, 5814)
+
+p = reconstPath(pred, 5814, 1181)
+
+
+C = my_dict2 = {y: x for x, y in D.items()}
+print(C)
+plt.figure(figsize=(15,5))
+plt.axis('equal')
+plot_graph(C, pred)
+
+plt.show()
