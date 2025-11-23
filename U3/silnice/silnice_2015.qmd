@@ -1,0 +1,35 @@
+<!DOCTYPE qgis PUBLIC 'http://mrcc.com/qgis.dtd' 'SYSTEM'>
+<qgis version="3.44.4-Solothurn">
+  <identifier>Silnice_2015</identifier>
+  <parentidentifier></parentidentifier>
+  <language>CES</language>
+  <type>dataset</type>
+  <title>Silnice_2015</title>
+  <abstract>Zdroj: Data200
+Stav k 1.1.2015
+
+Vrstva obsahuje dálnice, rychlostní silnice, silnice I. třídy, silnice II. třídy, silnice III. třídy a neevidované silnice.</abstract>
+  <keywords vocabulary="Search keys">
+    <keyword>Silnice</keyword>
+  </keywords>
+  <links/>
+  <dates/>
+  <fees></fees>
+  <encoding></encoding>
+  <crs>
+    <spatialrefsys nativeFormat="Wkt">
+      <wkt></wkt>
+      <proj4></proj4>
+      <srsid>0</srsid>
+      <srid>0</srid>
+      <authid></authid>
+      <description></description>
+      <projectionacronym></projectionacronym>
+      <ellipsoidacronym></ellipsoidacronym>
+      <geographicflag>false</geographicflag>
+    </spatialrefsys>
+  </crs>
+  <extent>
+    <spatial maxy="51.34480400000000344" maxx="18.9446639999999995" dimensions="2" minz="0" maxz="0" miny="48.28616800000000353" minx="12.00933099999999953" crs="EPSG:4326"/>
+  </extent>
+</qgis>

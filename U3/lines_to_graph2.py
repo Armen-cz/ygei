@@ -53,15 +53,46 @@ PSE.insert(0, [1000000, 1000000])
 D = pointsToIDs(PSE)
 G = edgesToGraph(D, PS, PE, W)
 
-pred = DFSStack(G, 5814)
+pred = dijkstra(G, 48, 12911)
 
-p = reconstPath(pred, 5814, 1181)
+p = reconstPath(pred, 48, 12911)
 
 
 C = my_dict2 = {y: x for x, y in D.items()}
-print(C)
+#print(C)
 plt.figure(figsize=(15,5))
+
 plt.axis('equal')
-plot_graph(C, pred)
+#plot_graph(C, pred)
+
+
+
+import shapefile as shp  # Requires the pyshp package
+import matplotlib.pyplot as plt
+
+sf = shp.Reader("silnice/silnice_2015.shp")
+
+for shape in sf.shapeRecords():
+    x = [i[0] for i in shape.shape.points[:]]
+    y = [i[1] for i in shape.shape.points[:]]
+    plt.plot(x,y, "k-", linewidth=0.3)
+    
+sf = shp.Reader("okresy/okresy.shp")
+
+for shape in sf.shapeRecords():
+    x = [i[0] for i in shape.shape.points[:]]
+    y = [i[1] for i in shape.shape.points[:]]
+    plt.plot(x,y, "k-", linewidth=0.6)
+    
+    sf = shp.Reader("kraje/kraje.shp")
+
+for shape in sf.shapeRecords():
+    x = [i[0] for i in shape.shape.points[:]]
+    y = [i[1] for i in shape.shape.points[:]]
+    plt.plot(x,y, "k-", linewidth=1.5)
+    
+    #print([C[x][0] for x in p])
+plt.plot([-C[x][0] for x in p], [-C[y][1] for y in p], "r-", linewidth=1.5)
 
 plt.show()
+
