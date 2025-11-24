@@ -341,26 +341,32 @@ def make_set(u, pred, rank):
 
 # find root
 def find(pred, u, path_compression = None):
-    if path_compression not in [None, "half", "full"]:
-        print("Invalid path compression argument, path compression is not used")
-    if path_compression is None:
-        while pred[u] != u:
-            u = pred[u]
-        return u
-    elif path_compression is "half":
+    
+    if path_compression == "half": # half compression
         while pred[u] != u:
             pred[u] = pred[pred[u]] # moves to grandparent
             u = pred[u]             # predecessor is grandparent
         return u
-    else:
-        "tbd"
+    elif path_compression == "full": # full compression
+        while pred[u] != u:
+            u = pred[u]
+        root = u
+        while u != root:
+            u_pred = pred[u]  #Store predecessor
+            pred[u] = root    #Change predecessor to root
+            u = u_pred        #Go to parent
+        return u
+    else: # does it without path compression
+        while pred[u] != u:
+            u = pred[u]
+        return u
 
 
 
 # weighted union
-def union(pred, u, v, rank):
-    root_u = find(pred, u)
-    root_v = find(pred, v)
+def union(pred, u, v, rank, path_compression=None):
+    root_u = find(pred, u, path_compression=path_compression)
+    root_v = find(pred, v, path_compression=path_compression)
     if root_u != root_v:
         if rank[root_u] > rank[root_v]:
             pred[root_v] = root_u
@@ -371,7 +377,10 @@ def union(pred, u, v, rank):
             rank[root_v] = root_v + 1
 
 
-def boruvka_kruskal(V, E):
+def boruvka_kruskal(V, E, path_compression=None):
+    if path_compression not in [None, "half", "full"]:
+        print("Invalid path compression argument, path compression is not used")
+        
     T=[] #Empty tree
     wt = 0 #Sum of weights of T
     pred = [-1] * (len(V) + 1) #List of roots
@@ -381,7 +390,7 @@ def boruvka_kruskal(V, E):
     ES = sorted(E, key=lambda it:it[2]) #Sort edges by w
     for e in ES: #Process all edges
         u, v, w = e #Take an edge
-        if (find(pred, u) != find(pred, v)): #roots u, v in different trees?
+        if (find(pred, u, path_compression=path_compression) != find(pred, v, path_compression=path_compression)): #roots u, v in different trees?
             union(pred, u, v, rank) #Create union
             T.append([u, v, w]) #Add edge to tree
             wt = wt + w #Compute weight of T

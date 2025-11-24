@@ -4,6 +4,7 @@ from numpy import *
 from skript_ze_cviceni import *
 import shapefile as shp  # Requires the pyshp package
 import matplotlib.pyplot as plt
+import time
   
 def loadEdges(file_name):
     #Convert list of lines to the graph
@@ -124,8 +125,9 @@ for shape in sf.shapeRecords():
     y = [i[1] for i in shape.shape.points[:]]
     plt.plot(x,y, "k-", linewidth=1.5)
 
-skeleton_value, skeleton_tree = boruvka_kruskal(V, E)
-
+starter_time = time.time()
+skeleton_value, skeleton_tree = boruvka_kruskal(V, E, path_compression="full")
+print(f"finished in {time.time() - starter_time}")
 plot_skeleton_tree(C, skeleton_tree)
 
 plt.show()
