@@ -1,9 +1,9 @@
-# Graph
-
 # výborná literatura - průvodcem labyrintem algoritmů od českých tvůrců
 
 import graph_def
 import matplotlib.pyplot as plt
+import random
+
 
 G = graph_def.G
 C = graph_def.C
@@ -201,8 +201,10 @@ import graph_def3
 import math
 import queue
 
+
 G = graph_def3.G
 C = graph_def3.C
+
 
 def dijkstra(G, start):
     # Dijkstra algorithmus
@@ -239,6 +241,7 @@ def dijkstra(G, start):
                 PQ.put((dist[v], v))
                 
     return pred
+
 
 def relaxace(G, start):
     # algoritm for finding shortest paths in graph with negative edges
@@ -333,14 +336,13 @@ def shortest_path(G, start = None):
             pred[u] = dijkstra(G, u)
         return pred
             
-# makes new set
-def make_set(u, pred, rank):
+
+def make_set(u, pred, rank):   # makes new set
     pred[u] = u
     rank[u] = 0
 
 
-# find root
-def find(pred, u, path_compression = None):
+def find(pred, u, path_compression = None):  # find root
     
     if path_compression == "half": # half compression
         while pred[u] != u:
@@ -360,7 +362,6 @@ def find(pred, u, path_compression = None):
         while pred[u] != u:
             u = pred[u]
         return u
-
 
 
 # weighted union
@@ -397,15 +398,31 @@ def boruvka_kruskal(V, E, path_compression=None):
     return wt, T
 
 
+def jarnik_prime(V, G): 
+    T = [] # empty tree 
+    wt = 0 # sum of weights of T 
+    u = random.choice(V) 
+    tree_nodes = set([u]) 
+    n = len(G) 
+    while len(tree_nodes) != n: 
+        if len(tree_nodes) % 1000 == 0: 
+            print(f"{len(tree_nodes)} bodů ve stromu") 
+        min_wuv = math.inf 
+        min_v = math.inf 
+        for node in tree_nodes: 
+            for v, wuv in G[node].items(): 
+                if v in tree_nodes: 
+                    continue 
+                if wuv < min_wuv: 
+                    min_wuv = wuv 
+                    min_v = v 
+                    u = node 
+        
+        if min_wuv == math.inf:
+            break
 
-# call dijkstra
-pred = dijkstra(G, 1)
+        T.append([u, min_v, min_wuv]) 
+        tree_nodes.add(min_v) 
+        wt += min_wuv
 
-# path 
-path = reconstPath(pred, 1, 9)
-
-# print results
-print(path)
-    
-# v graph_def2 jsou věci na minimání kostru
-
+    return wt, T

@@ -127,10 +127,13 @@ for shape in sf.shapeRecords():
 
 starter_time = time.time()
 skeleton_value, skeleton_tree = boruvka_kruskal(V, E, path_compression="full")
-print(f"finished in {time.time() - starter_time}")
+print(skeleton_value)
 plot_skeleton_tree(C, skeleton_tree)
 
 plt.show()
+
+skeleten_value_prime, skeleton_value_tree = jarnik_prime(V, G)
+print(skeleten_value_prime)
 """ calculates path from every point to every other point
 # from every point to every point
 pred = shortest_path(G)
