@@ -4,11 +4,6 @@ import graph_def
 import matplotlib.pyplot as plt
 import random
 
-
-G = graph_def.G
-C = graph_def.C
-
-
 # DU 
 # vytvořit funkci, která cestu vizualizuje přes matplotlib
 # bodová množina jako uzly
@@ -17,26 +12,26 @@ def plot_graph(C, pred):
     text_dx = 3
     text_dy = 2
     for node, coor in C.items():
-        plt.annotate(str(node), (-coor[0] - text_dx, -coor[1] - text_dy))
+        plt.annotate(str(node), (coor[0] + text_dx, coor[1] + text_dy))
         
-    plt.plot([-C[i][0] for i in range(1,len(C))], [-C[j][1] for j in range(1, len(C))], "ko")
+    plt.plot([C[i][0] for i in range(1,len(C))], [C[j][1] for j in range(1, len(C))], "ko")
     for node, coor in C.items():
 
         # checks if the predecessor exists
         if pred[node] != -1:
-            node1_x, node1_y = -coor[0], -coor[1]
-            node2_x, node2_y = -C[pred[node]][0], -C[pred[node]][1]
+            node1_x, node1_y = coor[0], coor[1]
+            node2_x, node2_y = C[pred[node]][0], C[pred[node]][1]
             dx, dy = node1_x - node2_x, node1_y - node2_y
             
             # draws an arrow between a node and its predecessor
             plt.arrow(node2_x, node2_y, dx, dy, width=0.5, length_includes_head = True, color="r", head_length = 7, head_width = 4)
     
     
-def plot_skeleton_tree(C, T):
+def plot_skeleton_tree(C, T, color="r"):
     for edge in T:
-        node1_x, node1_y = -C[edge[0]][0], -C[edge[0]][1]
-        node2_x, node2_y = -C[edge[1]][0], -C[edge[1]][1]
-        plt.plot((node1_x, node2_x), (node1_y, node2_y), color="r")
+        node1_x, node1_y = C[edge[0]][0], C[edge[0]][1]
+        node2_x, node2_y = C[edge[1]][0], C[edge[1]][1]
+        plt.plot((node1_x, node2_x), (node1_y, node2_y), color=color)
 
 
 # BFS - in(G,u), out(BF tree (predecesers))
@@ -151,62 +146,10 @@ def DFSR(G, u, pred, states):
             
     states[u] = "closed"
 
-
-# # apply BFS
-# p_bfs = BFS(G, 1)
-# print(p_bfs)
-
-# pred_path = reconstPath(p_bfs, 1, 9)
-# print(pred_path)
-
-# # apply DFS with recursion
-# p = DFS(G, 1)
-# print(p)
-
-# pred_path = reconstPath(p, 1, 9)
-# print(pred_path)
-
-# # apply DFS with stack
-# p_dfs = DFSStack(G, 1)
-# print(p)
-
-# pred_path = reconstPath(p_dfs, 1, 9)
-# print(pred_path)
-
-# plt.figure(figsize=(15,5))
-# plt.subplot(121)
-# plot_graph(C, p_bfs)
-# plt.subplot(122)
-# plot_graph(C, p_dfs)
-# plt.suptitle("Left: BFS tree    Right: DFS tree")
-# plt.show()
-
-
-### 2. cvičení ###
-
-# Priority queue: <prior: value>
-# jarnik - modifikace dijkstra - dv = du
-# alespoň 100 měst
-# Dalnice: 130 km/h
-# 1T-3T: 90 km/h
-# sídla: 50 km/h
-# t = s/v
-# faktor klikatosti f = d(u,v)/||u-v||
-# t' = f*(s/v)
-# porovnat s mapy.cz, applemapy, google maps
-# hranu exportovat jako u, v, w=||u-v|| (v arcgisu to jde nějak exporotovat)
-# souřadnice na 3 desetinná místa
-
-import graph_def3
 import math
 import queue
 
-
-G = graph_def3.G
-C = graph_def3.C
-
-
-def dijkstra(G, start):
+def dijkstra(G, start, end):
     # Dijkstra algorithmus
     
     n = len(G)
@@ -240,7 +183,7 @@ def dijkstra(G, start):
                 # add v to priority queue
                 PQ.put((dist[v], v))
                 
-    return pred
+    return pred, dist[end]
 
 
 def relaxace(G, start):
@@ -276,7 +219,7 @@ def relaxace(G, start):
     return pred
 
 
-def bellman_ford(G, start):
+def bellman_ford(G, start, end):
     # implementation of bellman_ford algorithm - for graph with negative edges
     n = len(G)
     pred = [-1]*(n+1) # Predecessors
@@ -293,18 +236,15 @@ def bellman_ford(G, start):
                     dist[v] = dist[u] + wuv
                     pred[v] = u
                     improved = True
+                    
         # if no path is better, algorithm can stop sooner
         if not improved:
             break
 
-        # if relaxation happends n-times, it has a negative cycle
-        #if i == n:
-        #    raise Exception("Graph contains negative cycle")
-
-    return pred
+    return pred, dist[end]
 
 
-def shortest_path(G, start = None):
+def shortest_path(G, start = None, end = 1):
     print("Searching graph")
     # if start is defined, calculates shortest paths from one point 
     # to all other points
@@ -318,23 +258,23 @@ def shortest_path(G, start = None):
         if negative_edges is True:
             print("Found negative edges")
             print("Using Bellman-Ford algorithm")
-            pred = bellman_ford(G, start)
+            pred, dist = bellman_ford(G, start, end)
         else:
             print("Found only positive edges")
             print("Using Dijkstra algorithm")
-            pred = dijkstra(G, start)
-        return pred
+            pred, dist = dijkstra(G, start, end)
+        return pred, dist
     else:
         # if no point is defined as start point
         # calculates shortest paths from every point to every point
         # usis dijkstra from each point and saves it to pred[point][pred]
-        print("Calculates paths from every point to every point")
+        print(f"Calculates paths from every point to every point [{n}: point total]")
         pred = [None]*(n+1)
         for u in range(1, n):
             if u % 100 == 0:
                 print(f"Calculated path for {u} points")
-            pred[u] = dijkstra(G, u)
-        return pred
+            pred[u], dist = dijkstra(G, u, end)
+        return pred, dist
             
 
 def make_set(u, pred, rank):   # makes new set

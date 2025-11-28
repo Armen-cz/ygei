@@ -5,7 +5,37 @@ from skript_ze_cviceni import *
 import shapefile as shp  # Requires the pyshp package
 import matplotlib.pyplot as plt
 import time
-  
+
+def create_obce_dict(filename):
+    obce = dict()
+    with open(filename, "r", encoding="utf-8") as f:
+        
+        for line in f:
+            parts = line.strip().split("\t")     # split by TAB
+            name = parts[0]
+            x = float(parts[1])
+            y = float(parts[2])
+
+            obce[name] = (x, y)
+            
+    return obce
+
+def city_to_node(city_name, D, obce):
+    try:
+        city = obce[city_name]
+    except KeyError:
+        raise Exception(f"Město {city_name} není v databázi")
+        
+    shortest = 1000000
+    shortest_key = 0
+    
+    for value, key in D.items():
+        distance = math.sqrt(math.pow(city[0]-value[0],2) + math.pow(city[1]-value[1],2))
+        if distance < shortest:
+            shortest = distance
+            shortest_key = key
+    return shortest_key
+
 def loadEdges(file_name):
     #Convert list of lines to the graph
     PS = []
@@ -58,42 +88,47 @@ def graph_to_edges(G):
     return E
 
 
-#Load edges
-file = 'cesty_2015_euklid.csv'
-#file = 'graph_disjkstra.txt'
+def file_to_graph(file):
+    PS, PE, W = loadEdges(file)
 
-PS, PE, W = loadEdges(file)
+    #Merge lists and remove unique points
+    PSE = PS + PE
+    PSE=unique(PSE,axis=0).tolist()
+    PSE.insert(0, [1000000, 1000000])
 
-#Merge lists and remove unique points
-PSE = PS + PE
-PSE=unique(PSE,axis=0).tolist()
-PSE.insert(0, [1000000, 1000000])
+    #Edges to graph
+    D = pointsToIDs(PSE)
+    G = edgesToGraph(D, PS, PE, W)
 
-#Edges to graph
-D = pointsToIDs(PSE)
-G = edgesToGraph(D, PS, PE, W)
+    V = graph_to_nodes(G)
+    E = graph_to_edges(G)
+    
+    return D, G, V, E
 
-V = graph_to_nodes(G)
-E = graph_to_edges(G)
-
-pred = shortest_path(G, 48)
-
-p = reconstPath(pred, 48, 12911)
-
-
-C = my_dict2 = {y: x for x, y in D.items()}
 #print(C)
 plt.figure(figsize=(15,5))
 
 plt.axis('equal')
 #plot_graph(C, pred)
 
-sf = shp.Reader("silnice/silnice_2015.shp")
+file = 'silnice/s1_bez_klipu.txt'
+D, G, V, E = file_to_graph(file)
+
+obce = create_obce_dict("obce_souradnice.txt")
+
+city1_name = "Sokolov"
+city2_name = "Přelouč"
+
+start = city_to_node(city1_name, D, obce)
+end = city_to_node(city2_name, D, obce)
+
+
+sf = shp.Reader("silnice/silnice_final_final.shp")
 
 for shape in sf.shapeRecords():
     x = [i[0] for i in shape.shape.points[:]]
     y = [i[1] for i in shape.shape.points[:]]
-    plt.plot(x,y, "k-", linewidth=0.3)
+    plt.plot(x,y, "-", color="gray", linewidth=0.3)
     
 sf = shp.Reader("okresy/okresy.shp")
 
@@ -110,11 +145,56 @@ for shape in sf.shapeRecords():
     plt.plot(x,y, "k-", linewidth=1.5)
     
     #print([C[x][0] for x in p])
-plt.plot([-C[x][0] for x in p], [-C[y][1] for y in p], "r-", linewidth=1.5)
+
+#pred, dist = shortest_path(G, start, end)
+pred, dist = bellman_ford(G, start, end)
+print(f"{dist/1000} km: euklidovská vzdálenost")
+
+p = reconstPath(pred, start, end)
+
+C = my_dict2 = {y: x for x, y in D.items()}
+
+plt.annotate(city1_name, obce[city1_name])
+plt.annotate(city2_name, obce[city2_name])
+
+plt.plot([C[x][0] for x in p], [C[y][1] for y in p], "r-", linewidth=1.5)
+
+file = 'silnice/s2_bez_klipu.txt'
+D, G, V, E = file_to_graph(file)
+
+#pred, dist = shortest_path(G, start, end)
+pred, dist = bellman_ford(G, start, end)
+print(f"{dist/1000} hodin: rychlost + vzdálenost")
+
+p = reconstPath(pred, start, end)
+
+
+C = my_dict2 = {y: x for x, y in D.items()}
+
+plt.plot([C[x][0] for x in p], [C[y][1] for y in p], "g-", linewidth=1.5)
+
+file = 'silnice/s3_bez_klipu.txt'
+D, G, V, E = file_to_graph(file)
+
+#pred, dist = shortest_path(G, start, end)
+pred, dist = bellman_ford(G, start, end)
+print(f"{dist/1000} hodin: rychlost + klikatost + vzdálenost")
+
+p = reconstPath(pred, start, end)
+
+
+C = my_dict2 = {y: x for x, y in D.items()}
+
+plt.plot([C[x][0] for x in p], [C[y][1] for y in p], "b-", linewidth=1.5)
 
 plt.show()
 
 # vykreslení minimální kostry kruskal/boruvka
+
+file = 'silnice/s3_bez_klipu.txt'
+D, G, V, E = file_to_graph(file)
+
+C = my_dict2 = {y: x for x, y in D.items()}
 
 plt.figure(figsize=(15,5))
 
@@ -124,19 +204,28 @@ for shape in sf.shapeRecords():
     x = [i[0] for i in shape.shape.points[:]]
     y = [i[1] for i in shape.shape.points[:]]
     plt.plot(x,y, "k-", linewidth=1.5)
+    
+sf = shp.Reader("silnice/silnice_final_final.shp")
+
+for shape in sf.shapeRecords():
+    x = [i[0] for i in shape.shape.points[:]]
+    y = [i[1] for i in shape.shape.points[:]]
+    plt.plot(x,y, "k-", linewidth=0.3)
 
 starter_time = time.time()
-skeleton_value, skeleton_tree = boruvka_kruskal(V, E, path_compression="full")
+skeleton_value, skeleton_tree = boruvka_kruskal(V, E)
 print(skeleton_value)
 plot_skeleton_tree(C, skeleton_tree)
 
+skeleten_value_prime, skeleton_tree_prime = jarnik_prime(V, G)
+print(skeleten_value_prime)
+plot_skeleton_tree(C, skeleton_tree_prime, color="g")
+
 plt.show()
 
-skeleten_value_prime, skeleton_value_tree = jarnik_prime(V, G)
-print(skeleten_value_prime)
-""" calculates path from every point to every other point
+"""calculates path from every point to every other point"""
 # from every point to every point
-pred = shortest_path(G)
+pred, dist = shortest_path(G)
 
 start = 100
 end = 2982
@@ -147,7 +236,7 @@ end = 7433
 p2 = reconstPath(pred[start], start, end)
 
 start = 2473
-end = 12953
+end = 11482
 p3 = reconstPath(pred[start], start, end)
 
 start = 5233
@@ -161,7 +250,7 @@ plt.figure(figsize=(15,5))
 plt.axis('equal')
 #plot_graph(C, pred)
 
-sf = shp.Reader("silnice/silnice_2015.shp")
+sf = shp.Reader("silnice/silnice_final_final.shp")
 
 for shape in sf.shapeRecords():
     x = [i[0] for i in shape.shape.points[:]]
@@ -183,9 +272,9 @@ for shape in sf.shapeRecords():
     plt.plot(x,y, "k-", linewidth=1.5)
     
     #print([C[x][0] for x in p])
-plt.plot([-C[x][0] for x in p], [-C[y][1] for y in p], "r-", linewidth=1.5)
-plt.plot([-C[x][0] for x in p2], [-C[y][1] for y in p2], "r-", linewidth=1.5)
-plt.plot([-C[x][0] for x in p3], [-C[y][1] for y in p3], "r-", linewidth=1.5)
-plt.plot([-C[x][0] for x in p4], [-C[y][1] for y in p4], "r-", linewidth=1.5)
+plt.plot([C[x][0] for x in p], [C[y][1] for y in p], "r-", linewidth=1.5)
+plt.plot([C[x][0] for x in p2], [C[y][1] for y in p2], "r-", linewidth=1.5)
+plt.plot([C[x][0] for x in p3], [C[y][1] for y in p3], "r-", linewidth=1.5)
+plt.plot([C[x][0] for x in p4], [C[y][1] for y in p4], "r-", linewidth=1.5)
 
-plt.show()"""
+plt.show()
