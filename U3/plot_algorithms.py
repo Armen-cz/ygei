@@ -30,14 +30,11 @@ def plot_skeleton_tree(C, T, color="r"): # plots a skeleton tree
         
         
 def plot_shp_polygons(sf, line_width, color="k"): # plots shapefiles 
-    
     # plots each shape (polygon, line) separately
     for shapeRec in sf.shapeRecords():
         shp = shapeRec.shape # takes one shape
-
         # each "part" is a separate polygon ring
         parts = shp.parts.tolist() + [len(shp.points)]
-
         for i in range(len(parts) - 1):
             start_i, end_i = parts[i], parts[i+1]
             x = [p[0] for p in shp.points[start_i:end_i]]

@@ -11,14 +11,20 @@ plt.figure(figsize=(15,5))
 
 plt.axis('equal')
 
-file = 'silnice/s1_bez_klipu.txt' # used for getting coordinates of road nodes
+file = 'silnice/s1_euklid.txt' # used for getting coordinates of road nodes
 D, G, V, E = file_to_graph(file)
 
 obce_file = "obce_souradnice.txt" # file with cities and its coordinates
 obce, obce_jmena = obce_file_to_dict_list(obce_file) # transfers to dictionary (city name: (x, y)) and list of city names
 
-city1_name = "Svojšín" # start city 
-city2_name = "Kanina"  # end city
+#city1_name = "Svojšín" # start city 
+#city2_name = "Kanina"  # end city
+
+#city1_name = "Sokolov"
+#city2_name = "Přelouč"
+
+city1_name = "Úštěk"
+city2_name = "Uhlířské Janovice"
 
 start = city_to_node(city1_name, D, obce) # transfers city name to node
 end = city_to_node(city2_name, D, obce)   # transfers city name to node
@@ -35,7 +41,7 @@ plot_shp_polygons(sf, 1.3)
 
 ### Shortest path using euklid distance weight ###
 
-file = 'silnice/s1_bez_klipu.txt' # roads with euklid distances
+file = 'silnice/s1_euklid.txt' # roads with euklid distances
 D, G, V, E = file_to_graph(file)  # file to variables
 pred, dist = shortest_path(G, start, end)          # finds shortest path
 print(f"{round(dist/1000,3)} km: euklidovská vzdálenost")   # distance in kilometers
@@ -47,7 +53,7 @@ plt.plot([C[x][0] for x in p], [C[y][1] for y in p], "r-", linewidth=1.5)
 
 ### Shortest path using euklid/max_speed weight ###
 
-file = 'silnice/s2_bez_klipu.txt' # roads with euklid/max_speed distances
+file = 'silnice/s2_rychlost.txt' # roads with euklid/max_speed distances
 D, G, V, E = file_to_graph(file)  # file to variables
 pred, dist = shortest_path(G, start, end)           # finds shortest path
 print(f"{round(dist/1000,3)} hodin: rychlost + vzdálenost")  # distance in hours
@@ -59,7 +65,7 @@ plt.plot([C[x][0] for x in p], [C[y][1] for y in p], "g-", linewidth=1.5)
 
 ### Shortest path using euklid/max_speed*curvature(klikatost) weight ###
 
-file = 'silnice/s3_bez_klipu.txt' # roads with euklid/max_speed*curvature distances
+file = 'silnice/s3_rychlost_klikatost.txt' # roads with euklid/max_speed*curvature distances
 D, G, V, E = file_to_graph(file)  # file to variables
 pred, dist = shortest_path(G, start, end)                       # finds shortest path
 print(f"{round(dist/1000,3)} hodin: rychlost + klikatost + vzdálenost")  # distance in hours
@@ -78,7 +84,7 @@ plt.show() # shows the plot
 """Calculates minimal skeleton"""
 
 # uses edges with weidht of distance/speed*curvature(klikatost)
-file = 'silnice/s3_bez_klipu.txt'
+file = 'silnice/s1_euklid.txt'
 D, G, V, E = file_to_graph(file)
 
 C = my_dict2 = {y: x for x, y in D.items()}
@@ -111,7 +117,7 @@ plt.show() # plots minimal skeleton
 """calculates path from every point to every other point"""
 
 # from every point to every point
-file = 'silnice/s3_bez_klipu.txt'
+file = 'silnice/s3_rychlost_klikatost.txt'
 D, G, V, E = file_to_graph(file)
 C = my_dict2 = {y: x for x, y in D.items()}
 pred, _ = shortest_path(G)

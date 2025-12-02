@@ -178,7 +178,10 @@ def bellman_ford(G, start, end):
         # if no path is better, algorithm can stop sooner
         if not improved:
             break
-
+        if i == n:
+            print("Found negative cycle")
+            return None
+        
     return pred, dist[end]
 
 
@@ -228,7 +231,7 @@ def find(pred, u, path_compression = None):  # find root
             u = pred[u]             # predecessor is grandparent
         return u
     elif path_compression == "full": # full compression
-        while pred[u] != u:
+        while pred[u] != u:          
             u = pred[u]
         root = u
         while u != root:
