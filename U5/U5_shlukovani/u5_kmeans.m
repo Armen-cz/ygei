@@ -1,10 +1,5 @@
 clear; clc; close;
 
-% [xi,yi] = getpts;
-% M=[xi,yi];
-% 
-% save body.mat M
-% 
 %% Pro generaci bodů
 A = randn(23,2)*6;
 B = randn(18,2)*4+[13,7];
@@ -17,8 +12,6 @@ H = randn(21,2)*5+[-18,9];
 I = randn(32,2)*8+[32,15];
 J = randn(21,2)*5+[-21,-21];
 M = [A;B;C;D;E;F;G;H;I;J];
-V=["rx" "bx" "gx"];
-VS=["ro" "bo" "go"];
 save body.mat M
 
 load("body.mat");
@@ -28,27 +21,23 @@ hold on
 % plot(M(:,1), M(:,2), "g*")
 %[xi,yi] = getpts;
 
+% lineární inicializace shluků
 S = [];
-min_x = min(M(:,1))
-min_y = min(M(:,2))
-max_x = max(M(:,1))
-max_y = max(M(:,2))
-d_x = max_x-min_x
-d_y = max_y-min_y
+min_x = min(M(:,1));
+min_y = min(M(:,2));
+max_x = max(M(:,1));
+max_y = max(M(:,2));
+d_x = max_x-min_x;
+d_y = max_y-min_y;
 
-pocet_s = 10;
-for i = 1:pocet_s   % 1 : počet shluků
-    S(i,:) = [min_x + (d_x)*((i-1)/(pocet_s-1)), min_y + (d_y)*((i-1)/(pocet_s-1))]
+pocet_s = 10; % number of clusters
+
+for i = 1:pocet_s   % 1 : number of clusters
+    S(i,:) = [min_x + (d_x)*((i-1)/(pocet_s-1)), min_y + (d_y)*((i-1)/(pocet_s-1))];
 end
 V=["r." "b." "g." "m."];
 V = ["r." "b." "g." "m." "c." "y." "k." "r*" "b*" "g*"];
 
-
-
-%plot(S(:,1), S(:,2), "k*")
-axis equal
-
-% S = [xi, yi]; % nebo pomocí úhlopříčky min max; nebo náhodně ! Chtělo by to implementovat
 Imax=30;
 I=0;
 S_prev = S - [1, 1];
@@ -67,17 +56,6 @@ while I < Imax && ~isequal(S_prev, S) % until centroids are different or iterati
         end
         L(i) = closest_centroid_i;                % stores closest centroid id
     end
-
-    figure
-    axis equal
-    hold on
-    for i = 1:length(M)
-        plot(M(i,1), M(i,2), V(L(i)), 'MarkerSize',12)
-    end
-    plot(S(:,1), S(:,2), "kx", "MarkerSize",15, 'LineWidth',3);
-    title(sprintf('Implemented k-means function - step %d', I+1))
-    hold off
-    saveas(gcf, sprintf('k-means_stepc%d.png', I+1));
 
     %%% calculates new centroids %%%
     for centroid_i = 1:length(S)                   % for each cluster
@@ -100,6 +78,7 @@ while I < Imax && ~isequal(S_prev, S) % until centroids are different or iterati
     I = I + 1;                                  % iteration + 1
 end
 
+% vykreslení vlastní implementace
 hold on
 for i = 1:length(M)
     plot(M(i,1), M(i,2), V(L(i)), 'MarkerSize',12)
@@ -108,7 +87,7 @@ ax = plot(S(:,1), S(:,2), "kx", "MarkerSize",15, 'LineWidth',3);
 title 'Implemented k-means function'
 hold off
 
-
+% vykreslení vestavěné metody kmeans
 [idx,C] = kmeans(M,10);
 
 figure;
@@ -121,9 +100,11 @@ bx = plot(C(:,1),C(:,2),'kx','MarkerSize',15,'LineWidth',3);
 title 'Matlab k-means function'
 hold off
 
+% uložení výstupů
 saveas(bx, "matlab3.png")
 saveas(ax, "implemented3.png")
 
+% funkce pro výpočet vzdálenosti
 function d = dist(point1, point2)
 d = sqrt((point1(1)-point2(1))^2 + (point1(2)-point2(2))^2);
 end
